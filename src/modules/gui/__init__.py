@@ -1,1 +1,1 @@
-from .MainWindow import MainWindow
+from .WindowController import WindowController

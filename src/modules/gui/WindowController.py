@@ -1,18 +1,22 @@
-from tkinter import *
-from tkinter import ttk
-from os.path import join
+import tkinter as tk
+import os.path as path
+from .StartPage import StartPage
 
-class MainWindow:
+class WindowController(tk.Tk):
     """
     This class creates the main application window and is responsible for the core layout
     """
     def __init__(self, approot):
+        super().__init__()
+
         self._approot = approot
-        self._moduleroot = join(self._approot, "modules")
+        self._moduleroot = path.join(self._approot, "modules")
         self._window_title = "X4 Save Manager"
-        self._window = Tk()
+
+        ## all pages\page parts should inherit from tk.Frame and take a parameter for WindowController to store as the parent
+        self.startpage = StartPage(self)
+        
         self.set_window_title()
-        self.build_window()
         self.startup()
 
     def set_window_title(self, text=""):
@@ -20,15 +24,12 @@ class MainWindow:
         Sets the window title
         """
         if not text:
-            self._window.title(f"{self._window_title}")
+            self.title(f"{self._window_title}")
         else:
-            self._window.title(f"{self._window_title} - {text}")
+            self.title(f"{self._window_title} - {text}")
     
     def startup(self):
         """
         starts the main window TK event loop
         """
-        self._window.mainloop()
-    
-    def build_window(self):
-        pass
+        self.mainloop()
