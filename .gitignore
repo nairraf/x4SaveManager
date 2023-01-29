@@ -1,5 +1,4 @@
 __pycache__
 .venv
-.vscode
 tests/test*.py
 src/modules/test.py
