@@ -24,7 +24,7 @@ class StartPage(ttk.Frame):
         self._controller = controller
         self._playthroughs = []
         self.playthrousghs_var = tk.StringVar()
-        self.modalresult = ''
+        self.modalresult = 0
         self.build_page()
 
     def build_page(self):
@@ -121,6 +121,8 @@ class StartPage(ttk.Frame):
                 canceltext="No"
             )
             if self.modalresult:
+                # reset the model result for future operations
+                self.modalresult = 0
                 self._playthroughs.append(txt)
                 self._playthroughs.sort()
                 self.playthrousghs_var.set(self._playthroughs)
