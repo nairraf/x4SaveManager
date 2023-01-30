@@ -44,7 +44,7 @@ class WindowController(tk.Tk):
         # we set the root window row and column to be responsive
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.minsize(width=600, height=200)
+        self.minsize(width=600, height=255)
 
         # we place a frame which is the size of the entire window, which is the
         # parent to all other page part objects. we also make this root level

@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-class StatusBar(tk.Frame):
+class StatusBar(ttk.Frame):
     """Provides a statusbar with a left, center, and right area
     and provides methods to write status messages into each
 
@@ -38,9 +38,9 @@ class StatusBar(tk.Frame):
     def build_statusbar(self):
         """Builds the status bar
         """
-        self.config(border=2, relief='ridge')
+        self.config(border=2, relief='solid')
         self.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.S))
-        self.columnconfigure([1, 3, 5], weight=1)
+        self.columnconfigure([0, 2, 4], weight=1)
 
         # left status bar
         status_left = ttk.Label(
@@ -51,7 +51,7 @@ class StatusBar(tk.Frame):
             anchor='w',
             width=30
         )
-        status_left.grid(column=1, row=0, sticky=(tk.W, tk.E))
+        status_left.grid(column=0, row=0, sticky=(tk.W, tk.E))
 
         # center status bar
         status_center = ttk.Label(
@@ -62,17 +62,17 @@ class StatusBar(tk.Frame):
             relief='flat',
             width=30
         )
-        status_center.grid(column=3, row=0, sticky=(tk.W, tk.E))
+        status_center.grid(column=2, row=0, sticky=(tk.W, tk.E))
         lseperator = ttk.Separator(
             self,
             orient='vertical'
         )
-        lseperator.grid(column=2, row=0, sticky=(tk.N, tk.S))
+        lseperator.grid(column=1, row=0, sticky=(tk.N, tk.S))
         rseperator = ttk.Separator(
             self,
             orient='vertical'
         )
-        rseperator.grid(column=4, row=0, sticky=(tk.N, tk.S))
+        rseperator.grid(column=3, row=0, sticky=(tk.N, tk.S))
 
         # right status bar
         status_right = ttk.Label(
@@ -83,7 +83,7 @@ class StatusBar(tk.Frame):
             anchor='e',
             width=30
         )
-        status_right.grid(column=5, row=0, sticky=(tk.W, tk.E))
+        status_right.grid(column=4, row=0, sticky=(tk.W, tk.E))
 
     def set_playthrough(self, message):
         """updates the left status area with 'message'
