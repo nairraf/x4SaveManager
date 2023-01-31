@@ -24,7 +24,7 @@ class StartPage(ttk.Frame):
         self._controller = controller
         self._playthroughs = []
         self.playthrousghs_var = tk.StringVar()
-        self.modalresult = 0
+        self.modalresult = None
         self.build_page()
 
     def build_page(self):
@@ -33,7 +33,7 @@ class StartPage(ttk.Frame):
         # 3 columns, sticky on all sides to be responsive
         # with a little inner padding
         self.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.S, tk.N))
-        self.columnconfigure(3, weight=1)
+        self.columnconfigure(2, weight=1)
         self.rowconfigure(1, weight=1)
         # padding = W, N, E, S
         # 25 padding at the bottom to float above the status bar
@@ -43,30 +43,29 @@ class StartPage(ttk.Frame):
         self.playthrough = tk.StringVar()
         entry_frame = ttk.LabelFrame(self, text="Create Playthrough")
         entry_frame.grid(
-            column=1,
+            column=0,
             row=0,
-            columnspan=2,
             ipadx=5,
             ipady=5,
             sticky=(tk.N, tk.W)
         )
         entry_label = ttk.Label(entry_frame, text="Name:")
-        entry_label.grid(column=1, row=0)
+        entry_label.grid(column=0, row=0)
         self.entry = ttk.Entry(
             entry_frame,
             textvariable=self.playthrough,
             width=20
         )
-        self.entry.grid(column=2, row=0)
+        self.entry.grid(column=1, row=0)
         space = tk.Label(entry_frame, text='')
-        space.grid(column=3, row=0)
+        space.grid(column=2, row=0)
         entry_button = ttk.Button(
             entry_frame,
             text="Create",
             command=self.create_playthrough
         )
         entry_button.grid(
-            column=4,
+            column=3,
             row=0
         )
 
@@ -77,8 +76,7 @@ class StartPage(ttk.Frame):
            padding=5
         )
         playthrough_frame.grid(
-           column=1,
-           columnspan=2,
+           column=0,
            row=1,
            sticky=(tk.W, tk.N, tk.S, tk.E)
         )
@@ -105,6 +103,40 @@ class StartPage(ttk.Frame):
             sticky=(tk.N, tk.S)
         )
 
+        # middle spacer column
+        ttk.Label(
+            self,
+            text='',
+            width=2
+        ).grid(
+            column=1,
+            row=0,
+            rowspan=2
+        )
+
+        # details section
+        details_frame = ttk.LabelFrame(
+            self,
+            text='Details',
+            padding=5
+        )
+        details_frame.grid_rowconfigure(0, weight=1)
+        details_frame.grid_columnconfigure(0, weight=1)
+        details_frame.grid(
+            column=2,
+            row=0,
+            rowspan=2,
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+        tree = ttk.Treeview(
+            details_frame
+        )
+        tree.grid(
+            column=0,
+            row=0,
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+
     def create_playthrough(self):
         """saves the new playthrough name
         """
@@ -113,7 +145,7 @@ class StartPage(ttk.Frame):
             MessageWindow(
                 self,
                 self._controller.window_title,
-                "Add Playthrough:\n{}".format(
+                "Add Playthrough:\n{}?".format(
                     txt
                 ),
                 type="question",
@@ -121,8 +153,8 @@ class StartPage(ttk.Frame):
                 canceltext="No"
             )
             if self.modalresult:
-                # reset the model result for future operations
-                self.modalresult = 0
+                # reset modalresult for future operations
+                self.modalresult = None
                 self._playthroughs.append(txt)
                 self._playthroughs.sort()
                 self.playthrousghs_var.set(self._playthroughs)
