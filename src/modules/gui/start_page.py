@@ -164,7 +164,7 @@ class StartPage(ttk.Frame):
             MessageWindow(
                 self,
                 self._controller.window_title,
-                "Add Playthrough:\n{}?".format(
+                "Add Playthrough:\n  {}".format(
                     txt
                 ),
                 type="question",

@@ -18,7 +18,7 @@ Example:
 import tkinter as tk
 from .start_page import StartPage
 from .status_bar import StatusBar
-
+from .main_menu import MainMenu
 
 class WindowController(tk.Tk):
     """This class creates the main application window and is responsible
@@ -45,6 +45,7 @@ class WindowController(tk.Tk):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.minsize(width=600, height=255)
+        self.option_add('*tearOff', False)
 
         # we place a frame which is the size of the entire window, which is the
         # parent to all other page part objects. we also make this root level
@@ -58,6 +59,7 @@ class WindowController(tk.Tk):
         # all pages parts should inherit from tk.Frame and
         # use self.content as their parent and take a second
         # argument to pass the WindowController instance (self)
+        self.top_menu = MainMenu(self)
         self.startpage = StartPage(self.content, self)
         self.statusbar = StatusBar(self.content, self)
 
