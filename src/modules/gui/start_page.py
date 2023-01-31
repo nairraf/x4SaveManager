@@ -39,12 +39,13 @@ class StartPage(ttk.Frame):
         # padding = W, N, E, S
         # 25 padding at the bottom to float above the status bar
         self['padding'] = (10,5,10,25)
-
         # add a main pane with two sides for resizable East and West sections
         pane = tk.PanedWindow(
             self,
             orient='horizontal',
             sashpad=2,
+            handlepad=0,
+            handlesize=7,
             showhandle=True,
             sashrelief='ridge'
         )
