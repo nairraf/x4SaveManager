@@ -23,6 +23,7 @@ class StartPage(ttk.Frame):
         self._parent = parent
         self._controller = controller
         self._playthroughs = []
+        self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
         self.modalresult = None
         self.build_page()
@@ -33,45 +34,71 @@ class StartPage(ttk.Frame):
         # 3 columns, sticky on all sides to be responsive
         # with a little inner padding
         self.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.S, tk.N))
-        self.columnconfigure(2, weight=1)
-        self.rowconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
         # padding = W, N, E, S
         # 25 padding at the bottom to float above the status bar
         self['padding'] = (10,5,10,25)
 
+        # add a main pane with two sides for resizable East and West sections
+        pane = tk.PanedWindow(
+            self,
+            orient='horizontal',
+            sashpad=2,
+            showhandle=True,
+            sashrelief='ridge'
+        )
+        pane.grid(
+            column=0,
+            row=0,
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+
         # create playthrough section
-        self.playthrough = tk.StringVar()
-        entry_frame = ttk.LabelFrame(self, text="Create Playthrough")
+        lframe=ttk.Frame(
+            pane
+        )
+        lframe.grid_columnconfigure(0, weight=1)
+        lframe.grid_rowconfigure(1, weight=1)
+        
+        entry_frame = ttk.LabelFrame(lframe, text="Create Playthrough")
+        entry_frame.grid_columnconfigure(1, weight=1)
         entry_frame.grid(
             column=0,
             row=0,
             ipadx=5,
-            ipady=5,
-            sticky=(tk.N, tk.W)
+            ipady=3,
+            sticky=(tk.W, tk.E, tk.N)
         )
         entry_label = ttk.Label(entry_frame, text="Name:")
-        entry_label.grid(column=0, row=0)
+        entry_label.grid(
+            column=0,
+            row=0,
+            sticky=tk.E
+        )
         self.entry = ttk.Entry(
             entry_frame,
-            textvariable=self.playthrough,
-            width=20
+            textvariable=self.playthrough_var
         )
-        self.entry.grid(column=1, row=0)
-        space = tk.Label(entry_frame, text='')
-        space.grid(column=2, row=0)
+        self.entry.grid(
+            column=1,
+            row=0,
+            padx=2,
+            sticky=(tk.E, tk.W)
+        )
         entry_button = ttk.Button(
             entry_frame,
             text="Create",
             command=self.create_playthrough
         )
         entry_button.grid(
-            column=3,
-            row=0
+            column=2,
+            row=0,
+            padx=2
         )
-
         # Playthrough Listbox
         playthrough_frame = ttk.LabelFrame(
-           self,
+           lframe,
            text='Playthroughs',
            padding=5
         )
@@ -103,20 +130,9 @@ class StartPage(ttk.Frame):
             sticky=(tk.N, tk.S)
         )
 
-        # middle spacer column
-        ttk.Label(
-            self,
-            text='',
-            width=2
-        ).grid(
-            column=1,
-            row=0,
-            rowspan=2
-        )
-
         # details section
         details_frame = ttk.LabelFrame(
-            self,
+            pane,
             text='Details',
             padding=5
         )
@@ -136,11 +152,14 @@ class StartPage(ttk.Frame):
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+        # add our root level frames to each side
+        pane.add(lframe, minsize=250)
+        pane.add(details_frame, minsize=200)
 
     def create_playthrough(self):
         """saves the new playthrough name
         """
-        txt = app.Validate.text_input(self.playthrough.get())
+        txt = app.Validate.text_input(self.playthrough_var.get())
         if txt:
             MessageWindow(
                 self,
