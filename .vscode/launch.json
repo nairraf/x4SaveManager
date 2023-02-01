@@ -8,7 +8,7 @@
             "name": "Python: x4SaveManager",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/startup.py",
+            "program": "${workspaceFolder}/src/x4SaveManager.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },
