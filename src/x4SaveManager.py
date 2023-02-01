@@ -1,6 +1,6 @@
 """Application Bootstrap
 
-startup.py bootstraps the application and then loads a new instance
+bootstraps the application and then loads a new instance
 of modules.gui.WindowController, which creates the initial GUI and calls the
 Tk mainloop() method which then waits for the events from the displayed GUI.
 """
