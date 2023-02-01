@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import Menu
+from .settings_page import Settings
 
 class MainMenu():
     def __init__(self, root):
@@ -14,7 +15,10 @@ class MainMenu():
 
         # file menu
         menu_file.add_separator()
-        menu_file.add_command(label='Exit', command=self.exit)
+        menu_file.add_command(label='Exit', command=self.root.destroy)
 
-    def exit(self):
-        self.root.destroy()
+        # edit menu
+        menu_edit.add_command(label='Settings', command=self.open_settings)
+
+    def open_settings(self):
+        Settings(self)

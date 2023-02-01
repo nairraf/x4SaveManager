@@ -1,4 +1,6 @@
 __pycache__
 .venv
-tests/test*.py
 src/modules/test.py
+build/build
+build/dist
+build/*.spec

@@ -44,10 +44,10 @@ class StartPage(ttk.Frame):
             self,
             orient='horizontal',
             sashpad=2,
-            handlepad=0,
+            handlepad=50,
             handlesize=7,
-            showhandle=True,
-            sashrelief='ridge'
+            showhandle=False,
+            sashrelief='flat'
         )
         pane.grid(
             column=0,
