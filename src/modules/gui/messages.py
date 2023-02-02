@@ -23,14 +23,22 @@ class MessageWindow(tk.Toplevel):
                                         Defaults to "Cancel".
         """
         super().__init__()
+        # we hide the pop-up window, and then after it's built we show it with
+        # self.deiconify() at the bottom
+        # this works around the "flashing" bug where the window appears in 
+        # one location for a brief second and the "relocates/warps" to 
+        # the updated location (with the geometry call)
+        self.withdraw()
         self.caller = caller
         self.details_expanded = False
         self.title(title)
+        self.iconbitmap(self.caller.controller.iconpath)
         
         self.geometry("200x75+{}+{}".format(
             int(self.master.winfo_x() + (self.master.winfo_width()/2-100)),
             int(self.master.winfo_y() + (self.master.winfo_height()/2-32)))
         )
+        
         self.resizable(False, False)
         self.rowconfigure([0,1], weight=1)
         self.columnconfigure([0,1,2], weight=1)
@@ -70,6 +78,8 @@ class MessageWindow(tk.Toplevel):
             padx=(5, 5)
         )
         self.transient(self.master)
+        # show the window now that it's built and wait for the user click
+        self.deiconify()
         self.wait_visibility()
         self.grab_set()
         self.wait_window()

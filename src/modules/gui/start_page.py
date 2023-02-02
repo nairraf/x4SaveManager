@@ -21,7 +21,7 @@ class StartPage(ttk.Frame):
         """
         super().__init__(parent, **kwargs)
         self._parent = parent
-        self._controller = controller
+        self.controller = controller
         self._playthroughs = []
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
@@ -164,7 +164,7 @@ class StartPage(ttk.Frame):
         if txt:
             MessageWindow(
                 self,
-                self._controller.window_title,
+                self.controller.window_title,
                 "Add Playthrough:\n  {}".format(
                     txt
                 ),
@@ -178,6 +178,6 @@ class StartPage(ttk.Frame):
                 self._playthroughs.append(txt)
                 self._playthroughs.sort()
                 self.playthrousghs_var.set(self._playthroughs)
-                self._controller.statusbar.set_playthrough(txt)
+                self.controller.statusbar.set_playthrough(txt)
             
             self.entry.delete(0,'end')

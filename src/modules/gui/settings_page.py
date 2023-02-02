@@ -8,8 +8,9 @@ class Settings(tk.Toplevel):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.title("{} - Settings".format(
-            caller.root.window_title
+            caller.controller.window_title
         ))
+        self.iconbitmap(self.caller.controller.iconpath)
         self.config(
             padx=5,
             pady=5

@@ -41,7 +41,8 @@ class WindowController(tk.Tk):
         self.approot = approot
         self.moduleroot = moduleroot
         self.window_title = "X4 Save Manager"
-        self.iconbitmap(ospath.join(ospath.join(approot, "img"), "icon.ico"))
+        self.iconpath = ospath.join(ospath.join(approot, "img"), "icon.ico")
+        self.iconbitmap(self.iconpath)
 
         # we set the root window row and column to be responsive
         self.rowconfigure(0, weight=1)
