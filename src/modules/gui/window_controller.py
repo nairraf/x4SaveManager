@@ -87,11 +87,9 @@ class WindowController(tk.Tk):
         """
         self.mainloop()
 
-    def show_error(self, message, width=200, height=75):
+    def show_error(self, message):
         MessageWindow(
             self,
             message,
-            type="error",
-            width=width,
-            height=height
+            type="error"
         )

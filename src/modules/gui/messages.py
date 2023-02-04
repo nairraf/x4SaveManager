@@ -9,7 +9,7 @@ class MessageWindow(tk.Toplevel):
         tk (tk.Toplevel): inherits from tk.Toplevel
     """
     def __init__(self, caller, message, type="info", 
-        oktext="OK", canceltext="Cancel", width=200, height=75
+        oktext="OK", canceltext="Cancel"
     ):
         """Creates a configurable modal window and returns the result to the
         modalresult attribute of the caller object (caller parameter).
@@ -22,8 +22,6 @@ class MessageWindow(tk.Toplevel):
             oktext (str, optional): text for the OK button. Defaults to "OK".
             canceltext (str, optional): text for Cancel button. 
                                         Defaults to "Cancel".
-            width (int, optional): the window width, default 200
-            height (int, optional): the window height, default 75
         """
         super().__init__()
         # we hide the pop-up window, and then after it's built we show it with
@@ -38,50 +36,54 @@ class MessageWindow(tk.Toplevel):
         self.title(GuiSettings.window_title)
         self.iconbitmap(GuiSettings.icon_path)
         
-        self.geometry("{}x{}+{}+{}".format(
-            width,
-            height,
+        # we specify the position without a geometry to let
+        # tkinter size the window for us
+        self.geometry("+{}+{}".format(
             int(self.master.winfo_x() + (self.master.winfo_width()/2-100)),
             int(self.master.winfo_y() + (self.master.winfo_height()/2-32)))
         )
         
-        self.resizable(True, True)
+        self.resizable(False, False)
         self.rowconfigure([0,1], weight=1)
-        self.columnconfigure([0,1,2], weight=1)
+        self.columnconfigure(1, weight=1)
         if type == "info":
             image = "::tk::icons::information"
             ttk.Button(self, text=oktext, command=self.ok).grid(
                 row=1,
                 column=0,
-                columnspan=3
+                columnspan=3,
+                pady=5
             )
         if type == "error":
             image = "::tk::icons::error"
             ttk.Button(self, text=oktext, command=self.ok).grid(
                 row=1,
                 column=0,
-                columnspan=3
+                columnspan=3,
+                pady=5
             )
         if type == "question":
             image = "::tk::icons::question"
             ttk.Button(self, text=oktext, command=self.ok).grid(
                 row=1,
                 column=1,
-                sticky="e",
+                sticky=tk.E,
                 padx=0,
-                pady=0
+                pady=5,
+                
             )
             ttk.Button(self, text=canceltext, command=self.cancel).grid(
                 row=1,
                 column=2,
-                sticky="e",
+                sticky=tk.W,
                 padx=(0, 5),
-                pady=0
+                pady=5
             )
         ttk.Label(self, image=image).grid(
             row=0,
             column=0,
-            sticky="e"
+            sticky="e",
+            padx=(10,0)
         )
         ttk.Label(self, text=message).grid(
             row=0,
