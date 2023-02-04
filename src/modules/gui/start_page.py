@@ -1,9 +1,9 @@
 """Definition for the StartPage Class
 """
 import tkinter as tk
-import modules.app as app
-from .messages import MessageWindow
 from tkinter import ttk
+from modules.app import Validate
+from .messages import MessageWindow
 
 class StartPage(ttk.Frame):
     """Builds the main application page
@@ -160,11 +160,10 @@ class StartPage(ttk.Frame):
     def create_playthrough(self):
         """saves the new playthrough name
         """
-        txt = app.Validate.text_input(self.playthrough_var.get())
+        txt = Validate.text_input(self.playthrough_var.get())
         if txt:
             MessageWindow(
                 self,
-                self.controller.window_title,
                 "Add Playthrough:\n  {}".format(
                     txt
                 ),

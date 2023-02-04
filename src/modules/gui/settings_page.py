@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from .gui_settings import GuiSettings
 
 class Settings(tk.Toplevel):
     def __init__(self, caller):
@@ -8,9 +9,9 @@ class Settings(tk.Toplevel):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.title("{} - Settings".format(
-            caller.controller.window_title
+            GuiSettings.window_title
         ))
-        self.iconbitmap(self.caller.controller.iconpath)
+        self.iconbitmap(GuiSettings.icon_path)
         self.config(
             padx=5,
             pady=5

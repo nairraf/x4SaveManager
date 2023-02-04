@@ -17,9 +17,12 @@ Example:
 """
 import tkinter as tk
 from os import path as ospath
+from modules.app import Settings
 from .start_page import StartPage
 from .status_bar import StatusBar
 from .main_menu import MainMenu
+from .messages import MessageWindow
+from .gui_settings import GuiSettings
 
 class WindowController(tk.Tk):
     """This class creates the main application window and is responsible
@@ -37,11 +40,12 @@ class WindowController(tk.Tk):
             moduleroot (str): filesystem path to the modules folder
         """
         super().__init__()
-
         self.approot = approot
         self.moduleroot = moduleroot
-        self.window_title = "X4 Save Manager"
-        self.iconpath = ospath.join(ospath.join(approot, "img"), "icon.ico")
+        GuiSettings.icon_path = ospath.join(
+            ospath.join(approot, "img"), "icon.ico"
+        )
+        self.iconpath = GuiSettings.icon_path
         self.iconbitmap(self.iconpath)
 
         # we set the root window row and column to be responsive
@@ -67,17 +71,27 @@ class WindowController(tk.Tk):
         self.statusbar = StatusBar(self.content, self)
 
         self.set_window_title()
+        self.config = Settings(self, approot)
         self.startup()
 
     def set_window_title(self, text=""):
         """Sets the window title
         """
         if not text:
-            self.title(f"{self.window_title}")
+            self.title(f"{GuiSettings.window_title}")
         else:
-            self.title(f"{self.window_title} - {text}")
+            self.title(f"{GuiSettings.window_title} - {text}")
 
     def startup(self):
         """starts the main window TK event loop
         """
         self.mainloop()
+
+    def show_error(self, message, width=200, height=75):
+        MessageWindow(
+            self,
+            message,
+            type="error",
+            width=width,
+            height=height
+        )
