@@ -9,9 +9,10 @@ class MainMenu():
         """Creates the main menu and binds it to the root app window
 
         Args:
-            root (tk.Tk): the root application window
+            controller (tk.Tk): the window_controller object
         """
         self.controller = controller
+        self.settings = None
         #create our top level menu's
         menubar = Menu(controller)
         self.controller['menu'] = menubar
@@ -28,4 +29,11 @@ class MainMenu():
         menu_edit.add_command(label='Settings', command=self.open_settings)
 
     def open_settings(self):
-        Settings(self)
+        if self.settings == None:
+            self.settings = Settings(self)
+            self.settings.bind('<Destroy>', self.settings_closed)
+        else:
+            self.settings.focus()
+
+    def settings_closed(self, *args):
+        self.settings = None

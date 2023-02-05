@@ -1,2 +1,2 @@
 APP:
-  DBPATH: "$(APPROOT)/DB/x4SaveManager.db"
+  DBPATH: "$(APPROOT)/db/x4SaveManager.db"

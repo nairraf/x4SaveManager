@@ -93,3 +93,9 @@ class WindowController(tk.Tk):
             message,
             type="error"
         )
+
+    def show_message(self, message):
+        MessageWindow(
+            self,
+            message
+        )

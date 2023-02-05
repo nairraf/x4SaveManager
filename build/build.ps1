@@ -1,2 +1,8 @@
 . ..\.venv\Scripts\Activate.ps1
-pyinstaller -y -p ..\src\modules --noconsole -i ..\src\img\icon.ico --add-binary "..\src\img\icon.ico;img" ..\src\x4SaveManager.py
+pyinstaller -y --noconsole `
+    -p ..\src\modules `
+    -i ..\src\img\icon.ico `
+    --add-binary "..\src\img;img" `
+    --add-data "..\src\conf;conf" `
+    --add-data "..\src\db;db" `
+    ..\src\x4SaveManager.py

@@ -3,7 +3,7 @@ import os as os
 
 class Settings():
     def __init__(self, controller, approot):
-        config_file= os.path.join(os.path.join(approot, "conf"), "conf2.yaml")
+        config_file= os.path.join(os.path.join(approot, "conf"), "conf.yaml")
 
         try:
             with open(config_file, 'r') as f:

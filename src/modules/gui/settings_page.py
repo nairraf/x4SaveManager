@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from .gui_settings import GuiSettings
+from .messages import MessageWindow
 
 class Settings(tk.Toplevel):
     def __init__(self, caller):
         super().__init__()
+        self.withdraw()
         self.caller = caller
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -16,6 +18,7 @@ class Settings(tk.Toplevel):
             padx=5,
             pady=5
         )
+        self.minsize(450,300)
         
         nb = ttk.Notebook(self, width=450, height=300)
         app_page = ttk.Frame(nb)
@@ -43,17 +46,23 @@ class Settings(tk.Toplevel):
         )
 
         self.update()
-        self.geometry("{}x{}+{}+{}".format(
-            self.winfo_width(),
-            self.winfo_height(),
+        self.geometry("+{}+{}".format(
             self.master.winfo_x() + 50,
             self.master.winfo_y() + 50
         ))
+        self.transient(self.master)
+        self.deiconify()
         self.focus()
+        #self.wait_visibility()
+        #self.grab_set()
+        #self.wait_window()
 
     def close(self):
         self.destroy()
 
     def save(self):
-        print("saving settings")
+        MessageWindow(
+            self,
+            "Saved Settings"
+        )
 

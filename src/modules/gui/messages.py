@@ -36,13 +36,6 @@ class MessageWindow(tk.Toplevel):
         self.title(GuiSettings.window_title)
         self.iconbitmap(GuiSettings.icon_path)
         
-        # we specify the position without a geometry to let
-        # tkinter size the window for us
-        self.geometry("+{}+{}".format(
-            int(self.master.winfo_x() + (self.master.winfo_width()/2-100)),
-            int(self.master.winfo_y() + (self.master.winfo_height()/2-32)))
-        )
-        
         self.resizable(False, False)
         self.rowconfigure([0,1], weight=1)
         self.columnconfigure(1, weight=1)
@@ -92,7 +85,30 @@ class MessageWindow(tk.Toplevel):
             sticky="ew",
             padx=(5, 5)
         )
-        self.transient(self.master)
+        self.transient(self.caller)
+
+        # position the window towards the center of the caller window
+        # we have to detect the startpage vs other callers/windows
+        x = 0
+        y = 0
+        caller_width = 0
+        caller_height = 0
+        if caller._name == '!startpage':
+            x = self.master.winfo_x()
+            y = self.master.winfo_y()
+            caller_width = self.master.winfo_width()/2
+            caller_height = self.master.winfo_height()/2
+        else:
+            x = self.caller.winfo_x()
+            y = self.caller.winfo_y()
+            caller_width = self.caller.winfo_width()/2
+            caller_height = self.caller.winfo_height()/2
+        
+        self.geometry("+{}+{}".format(
+            int( x + caller_width - self.winfo_reqwidth()/2),
+            int( y + caller_height - self.winfo_reqheight()/8)
+        ))
+
         # show the window now that it's built and wait for the user click
         self.deiconify()
         self.wait_visibility()
