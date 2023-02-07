@@ -1,15 +1,42 @@
 import yaml
-import os as os
+from os import path, makedirs
+import appdirs as appdirs
 
 class Settings():
-    def __init__(self, controller, approot):
-        config_file= os.path.join(os.path.join(approot, "conf"), "conf.yaml")
+    def __init__(self, controller):
+        self.controller = controller
+        self.config_root = appdirs.user_config_dir(
+            "x4SaveManager", False, "Release"
+        )
+        self.config_file = path.join(self.config_root, "config.yaml")
+        self.app_settings = None
+        self.load_config()
+        
+    def create_config(self):
+        if not path.exists(self.config_root):
+            makedirs(self.config_root)
+        self.app_settings = {
+            "APP": {
+                "DBPATH": "{}".format(
+                    path.join(
+                        appdirs.user_data_dir("x4SaveManager", False, "Release"),
+                        "x4SaveManager.db"
+                    )
+                )
+            }
+        }
+        self.save_config()
 
+    def save_config(self):
+        with open(self.config_file, "w") as f:
+            yaml.safe_dump(self.app_settings, f)
+
+    def load_config(self):
         try:
-            with open(config_file, 'r') as f:
-                self.config = yaml.safe_load(f)
+            with open(self.config_file, 'r') as f:
+                self.app_settings = yaml.safe_load(f)
         except FileNotFoundError:
-            controller.show_error(
-                "Config File Not found:\n{}".format(config_file),
-            )
+            self.create_config()
+    
+
         

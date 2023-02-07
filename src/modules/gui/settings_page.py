@@ -7,7 +7,8 @@ class Settings(tk.Toplevel):
         super().__init__()
         self.withdraw()
         self.status_text = tk.StringVar()
-        self.app_config_path_text = tk.StringVar()
+        self.db_path_text = tk.StringVar()
+        self.backup_path_text = tk.StringVar()
         self.caller = caller
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -30,20 +31,38 @@ class Settings(tk.Toplevel):
         # app page
         app_page = ttk.Frame(nb, padding=5)
         app_page.grid_columnconfigure(1, weight=1)
-        ttk.Label(app_page, text='Application Config Path:').grid(
+
+        ttk.Label(app_page, text='Database Path:').grid(
             column=0,
             row=0,
             sticky=tk.W
         )
-        self.app_config_path = ttk.Entry(
+        self.db_path = ttk.Entry(
             app_page,
-            textvariable=self.app_config_path_text,
+            textvariable=self.db_path_text,
             width=30
         )
-        self.app_config_path.grid(
+        self.db_path.grid(
             column=1,
             row=0,
-            sticky=(tk.E, tk.W)
+            sticky=(tk.E, tk.W),
+            pady=5
+        )
+
+        ttk.Label(app_page, text='Backup Path:').grid(
+            column=0,
+            row=1,
+            sticky=tk.W
+        )
+        self.backup_path = ttk.Entry(
+            app_page,
+            textvariable=self.backup_path_text,
+            width=30
+        )
+        self.backup_path.grid(
+            column=1,
+            row=1,
+            sticky=(tk.W, tk.E)
         )
         # database page
         db_page = ttk.Frame(nb, padding=5)

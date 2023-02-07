@@ -71,7 +71,7 @@ class WindowController(tk.Tk):
         self.statusbar = StatusBar(self.content, self)
 
         self.set_window_title()
-        self.app_settings = Settings(self, approot)
+        self.app_settings = Settings(self)
         self.startup()
 
     def set_window_title(self, text=""):

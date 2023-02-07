@@ -93,12 +93,15 @@ class MessageWindow(tk.Toplevel):
         y = 0
         caller_width = 0
         caller_height = 0
-        if caller._name == '!startpage':
-            x = self.master.winfo_x()
-            y = self.master.winfo_y()
-            caller_width = self.master.winfo_width()/2
-            caller_height = self.master.winfo_height()/2
-        else:
+        master = False
+        if hasattr(caller, '_name'):
+            if caller._name == '!startpage':
+                x = self.master.winfo_x()
+                y = self.master.winfo_y()
+                caller_width = self.master.winfo_width()/2
+                caller_height = self.master.winfo_height()/2
+                master = True
+        if not master:
             x = self.caller.winfo_x()
             y = self.caller.winfo_y()
             caller_width = self.caller.winfo_width()/2

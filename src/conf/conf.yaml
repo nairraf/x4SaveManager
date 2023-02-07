@@ -1,2 +1,0 @@
-APP:
-  DBPATH: "$(APPROOT)/db/x4SaveManager.db"
