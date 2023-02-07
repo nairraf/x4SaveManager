@@ -30,13 +30,11 @@ class Settings():
     def save_config(self):
         with open(self.config_file, "w") as f:
             json.dump(self.app_settings, f)
-            #yaml.safe_dump(self.app_settings, f)
 
     def load_config(self):
         try:
             with open(self.config_file, 'r') as f:
                 self.app_settings = json.load(f)
-                #self.app_settings = yaml.safe_load(f)
         except FileNotFoundError:
             self.create_config()
     
