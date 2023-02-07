@@ -1,4 +1,4 @@
-import yaml
+import json
 from os import path, makedirs
 import appdirs as appdirs
 
@@ -8,7 +8,7 @@ class Settings():
         self.config_root = appdirs.user_config_dir(
             "x4SaveManager", False, "Release"
         )
-        self.config_file = path.join(self.config_root, "config.yaml")
+        self.config_file = path.join(self.config_root, "config.json")
         self.app_settings = None
         self.load_config()
         
@@ -29,12 +29,14 @@ class Settings():
 
     def save_config(self):
         with open(self.config_file, "w") as f:
-            yaml.safe_dump(self.app_settings, f)
+            json.dump(self.app_settings, f)
+            #yaml.safe_dump(self.app_settings, f)
 
     def load_config(self):
         try:
             with open(self.config_file, 'r') as f:
-                self.app_settings = yaml.safe_load(f)
+                self.app_settings = json.load(f)
+                #self.app_settings = yaml.safe_load(f)
         except FileNotFoundError:
             self.create_config()
     
