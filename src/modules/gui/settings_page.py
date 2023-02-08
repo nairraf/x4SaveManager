@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
 from .gui_settings import GuiSettings
+from .messages import MessageWindow
 
 class Settings(tk.Toplevel):
     def __init__(self, caller):
         super().__init__()
         self.caller = caller
+        self.modalresult = 0
         self.withdraw()
         self.status_text = tk.StringVar()
         self.db_path_text = tk.StringVar()
@@ -152,7 +154,19 @@ class Settings(tk.Toplevel):
             
 
     def close(self):
-        self.destroy()
+        if self.save.instate(['disabled']):
+            self.destroy()
+        
+        MessageWindow(
+            self,
+            message="You have unsaved Changes.\nExit without saving changes?",
+            type='question',
+            canceltext="No",
+            oktext="Yes"
+        )
+
+        if self.modalresult == 1:
+            self.destroy()
 
     def save(self):
         self.caller.controller.app_settings.update_app_setting(
