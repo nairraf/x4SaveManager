@@ -156,17 +156,17 @@ class Settings(tk.Toplevel):
     def close(self):
         if self.save.instate(['disabled']):
             self.destroy()
-        
-        MessageWindow(
-            self,
-            message="You have unsaved Changes.\nExit without saving changes?",
-            type='question',
-            canceltext="No",
-            oktext="Yes"
-        )
+        else:
+            MessageWindow(
+                self,
+                message="You have unsaved Changes.\nExit without saving changes?",
+                type='question',
+                canceltext="No",
+                oktext="Yes"
+            )
 
-        if self.modalresult == 1:
-            self.destroy()
+            if self.modalresult == 1:
+                self.destroy()
 
     def save(self):
         self.caller.controller.app_settings.update_app_setting(
