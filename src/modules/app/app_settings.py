@@ -2,7 +2,7 @@ import json
 from os import path, makedirs
 import appdirs as appdirs
 
-class Settings():
+class AppSettings():
     def __init__(self, controller):
         self.controller = controller
         self.config_root = appdirs.user_config_dir(
@@ -22,14 +22,21 @@ class Settings():
                         appdirs.user_data_dir("x4SaveManager", False, "Release"),
                         "x4SaveManager.db"
                     )
+                ),
+                "BACKUPPATH": "{}".format(
+                    appdirs.user_data_dir("x4SaveManager", False, "Release")
                 )
             }
         }
-        self.save_config()
+        self.save()
 
-    def save_config(self):
-        with open(self.config_file, "w") as f:
-            json.dump(self.app_settings, f)
+    def save(self):
+        try:
+            with open(self.config_file, "w") as f:
+                json.dump(self.app_settings, f)
+            return True
+        except:
+            return False
 
     def load_config(self):
         try:
@@ -37,6 +44,13 @@ class Settings():
                 self.app_settings = json.load(f)
         except FileNotFoundError:
             self.create_config()
+
+    def get_app_setting(self, name):
+        return self.app_settings["APP"][name]
+    
+    def update_app_setting(self, name, data):
+        self.app_settings["APP"][name] = data
+
     
 
         

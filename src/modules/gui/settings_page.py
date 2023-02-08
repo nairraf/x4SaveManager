@@ -5,11 +5,11 @@ from .gui_settings import GuiSettings
 class Settings(tk.Toplevel):
     def __init__(self, caller):
         super().__init__()
+        self.caller = caller
         self.withdraw()
         self.status_text = tk.StringVar()
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
-        self.caller = caller
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.title("{} - Settings".format(
@@ -20,12 +20,10 @@ class Settings(tk.Toplevel):
             padx=5,
             pady=5
         )
-        self.minsize(450,300)
+        self.minsize(550,300)
         
         nb = ttk.Notebook(
             self,
-            width=450,
-            height=300,
             padding=5
         )
         # app page
@@ -37,10 +35,9 @@ class Settings(tk.Toplevel):
             row=0,
             sticky=tk.W
         )
-        self.db_path = ttk.Entry(
+        self.db_path = tk.Entry(
             app_page,
-            textvariable=self.db_path_text,
-            width=30
+            textvariable=self.db_path_text
         )
         self.db_path.grid(
             column=1,
@@ -54,10 +51,9 @@ class Settings(tk.Toplevel):
             row=1,
             sticky=tk.W
         )
-        self.backup_path = ttk.Entry(
+        self.backup_path = tk.Entry(
             app_page,
-            textvariable=self.backup_path_text,
-            width=30
+            textvariable=self.backup_path_text
         )
         self.backup_path.grid(
             column=1,
@@ -107,7 +103,11 @@ class Settings(tk.Toplevel):
             row=1,
             sticky=tk.E
         )
-
+        
+        self.get_settings()
+        self.db_path_text.trace_add('write', self.check_changes)
+        self.backup_path_text.trace_add('write', self.check_changes)
+        
         # place and show the status page
         self.update()
         self.geometry("+{}+{}".format(
@@ -118,10 +118,56 @@ class Settings(tk.Toplevel):
         self.deiconify()
         self.focus()
 
+    def get_settings(self):
+        self.db_path_text.set(
+            self.caller.controller.app_settings.get_app_setting('DBPATH')
+        )
+        self.backup_path_text.set(
+            self.caller.controller.app_settings.get_app_setting('BACKUPPATH')
+        )
+
+    def check_changes(self, *args, clear_status=True):
+        data_changed = False
+        if clear_status:
+            self.status_text.set("")
+
+        if ( not self.backup_path.get() == 
+                self.caller.controller.app_settings.get_app_setting('BACKUPPATH')):
+            data_changed = True
+            self.backup_path.config(bg="Yellow")
+        else:
+            self.backup_path.config(bg="White")
+        
+        if ( not self.db_path.get() == 
+                self.caller.controller.app_settings.get_app_setting('DBPATH')):
+            data_changed = True
+            self.db_path.config(background="Yellow")
+        else:
+            self.db_path.config(background="White")
+        
+        if data_changed:
+            self.save.state(['!disabled'])
+        else:
+            self.save.state(['disabled'])
+            
+
     def close(self):
         self.destroy()
 
     def save(self):
-        self.status_text.set("Settings Saved")
-        self.save.state(['disabled'])
+        self.caller.controller.app_settings.update_app_setting(
+            'DBPATH',
+            self.db_path.get()
+        )
+        self.caller.controller.app_settings.update_app_setting(
+            'BACKUPPATH',
+            self.backup_path.get()
+        )
+        if self.caller.controller.app_settings.save():
+            self.status_text.set("Settings Saved")
+            self.save.state(['disabled'])
+            self.check_changes(clear_status=False)
+        else:
+            self.status_text.set("Error Saving Settings")
+
 

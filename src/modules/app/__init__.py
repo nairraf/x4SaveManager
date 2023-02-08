@@ -3,4 +3,4 @@
 
 from .validate import Validate
 from .model import Model
-from .settings import Settings
+from .app_settings import AppSettings
