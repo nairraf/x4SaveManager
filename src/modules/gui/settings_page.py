@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from .gui_settings import GuiSettings
 from .messages import MessageWindow
+from os import path
 
 class Settings(tk.Toplevel):
     def __init__(self, caller):
@@ -22,7 +23,7 @@ class Settings(tk.Toplevel):
             padx=5,
             pady=5
         )
-        self.minsize(550,300)
+        self.minsize(650,300)
         
         nb = ttk.Notebook(
             self,
@@ -47,6 +48,16 @@ class Settings(tk.Toplevel):
             sticky=(tk.E, tk.W),
             pady=5
         )
+        ttk.Button(
+            app_page,
+            text='Browse',
+            command=self.db_browse
+        ).grid(
+            column=2,
+            row=0,
+            sticky=tk.E,
+            padx=2
+        )
 
         ttk.Label(app_page, text='Backup Path:').grid(
             column=0,
@@ -61,6 +72,16 @@ class Settings(tk.Toplevel):
             column=1,
             row=1,
             sticky=(tk.W, tk.E)
+        )
+        ttk.Button(
+            app_page,
+            text='Browse',
+            command=self.backup_browse
+        ).grid(
+            column=2,
+            row=1,
+            sticky=tk.E,
+            padx=2
         )
         # database page
         db_page = ttk.Frame(nb, padding=5)
@@ -109,6 +130,7 @@ class Settings(tk.Toplevel):
         self.get_settings()
         self.db_path_text.trace_add('write', self.check_changes)
         self.backup_path_text.trace_add('write', self.check_changes)
+        self.protocol("WM_DELETE_WINDOW", self.close)
         
         # place and show the status page
         self.update()
@@ -134,7 +156,8 @@ class Settings(tk.Toplevel):
             self.status_text.set("")
 
         if ( not self.backup_path.get() == 
-                self.caller.controller.app_settings.get_app_setting('BACKUPPATH')):
+                self.caller.controller.app_settings.get_app_setting('BACKUPPATH')
+            ):
             data_changed = True
             self.backup_path.config(bg="Yellow")
         else:
@@ -184,4 +207,23 @@ class Settings(tk.Toplevel):
         else:
             self.status_text.set("Error Saving Settings")
 
+    def db_browse(self):
+        folder=filedialog.askdirectory(
+            mustexist=False,
+            title="Database File Location"
+        )
+        if not folder == '':
+            folder=path.normpath(path.join(folder, "x4SaveManager.db"))
+            self.db_path.delete(0,'end')
+            self.db_path.insert(0, folder)
+
+    def backup_browse(self):
+        folder=filedialog.askdirectory(
+            mustexist=False,
+            title="Backup Location"
+        )
+        if not folder == '':
+            folder=path.normpath(folder)
+            self.backup_path.delete(0,'end')
+            self.backup_path.insert(0, folder)
 
