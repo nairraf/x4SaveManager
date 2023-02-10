@@ -5,27 +5,33 @@ import appdirs as appdirs
 class AppSettings():
     def __init__(self, controller):
         self.controller = controller
-        self.config_root = appdirs.user_config_dir(
+        self.config_dir = appdirs.user_config_dir(
             "x4SaveManager", False, "Release"
         )
-        self.config_file = path.join(self.config_root, "config.json")
+        self.backup_dir = path.join(
+            appdirs.user_data_dir(
+                "x4SaveManager", False, "Release"
+            ),
+            "Backups"
+        )
+        self.config_file = path.join(self.config_dir, "config.json")
         self.app_settings = None
         self.load_config()
         
     def create_config(self):
-        if not path.exists(self.config_root):
-            makedirs(self.config_root)
+        if not path.exists(self.config_dir):
+            makedirs(self.config_dir)
+        if not path.exists(self.backup_dir):
+            makedirs(self.backup_dir)
         self.app_settings = {
             "APP": {
                 "DBPATH": "{}".format(
                     path.join(
-                        appdirs.user_data_dir("x4SaveManager", False, "Release"),
+                        self.config_dir,
                         "x4SaveManager.db"
                     )
                 ),
-                "BACKUPPATH": "{}".format(
-                    appdirs.user_data_dir("x4SaveManager", False, "Release")
-                )
+                "BACKUPPATH": "{}".format(self.backup_dir)
             }
         }
         self.save()

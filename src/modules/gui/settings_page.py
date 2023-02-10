@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog
 from .gui_settings import GuiSettings
 from .messages import MessageWindow
 from os import path
+from pathlib import PurePath
 
 class Settings(tk.Toplevel):
     def __init__(self, caller):
@@ -208,9 +209,11 @@ class Settings(tk.Toplevel):
             self.status_text.set("Error Saving Settings")
 
     def db_browse(self):
+        initialdir=PurePath(self.db_path_text.get()).parent.as_posix()
         folder=filedialog.askdirectory(
             mustexist=False,
-            title="Database File Location"
+            title="Database File Location",
+            initialdir=initialdir
         )
         if not folder == '':
             folder=path.normpath(path.join(folder, "x4SaveManager.db"))
@@ -218,9 +221,11 @@ class Settings(tk.Toplevel):
             self.db_path.insert(0, folder)
 
     def backup_browse(self):
+        initialdir=PurePath(self.backup_path_text.get()).as_posix()
         folder=filedialog.askdirectory(
             mustexist=False,
-            title="Backup Location"
+            title="Backup Location",
+            initialdir=initialdir
         )
         if not folder == '':
             folder=path.normpath(folder)
