@@ -22,11 +22,11 @@ class StartPage(ttk.Frame):
         super().__init__(parent, **kwargs)
         self._parent = parent
         self.controller = controller
-        self._playthroughs = []
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
         self.modalresult = None
         self.build_page()
+        self.refresh_playthroughs()
 
     def build_page(self):
         """builds the main start page
@@ -174,9 +174,13 @@ class StartPage(ttk.Frame):
             if self.modalresult:
                 # reset modalresult for future operations
                 self.modalresult = None
-                self._playthroughs.append(txt)
-                self._playthroughs.sort()
-                self.playthrousghs_var.set(self._playthroughs)
+                self.controller.db.add_playthrough(txt) 
+                self.refresh_playthroughs()
                 self.controller.statusbar.set_playthrough(txt)
             
             self.entry.delete(0,'end')
+    
+    def refresh_playthroughs(self):
+        self.playthrousghs_var.set(
+            self.controller.db.get_playthrough_names()
+        )

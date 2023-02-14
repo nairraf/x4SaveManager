@@ -30,7 +30,7 @@ class MainMenu():
 
     def open_settings(self):
         if self.settings == None:
-            self.settings = Settings(self)
+            self.settings = Settings(self, self.controller)
             self.settings.bind('<Destroy>', self.settings_closed)
         else:
             self.settings.focus()

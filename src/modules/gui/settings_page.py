@@ -6,9 +6,10 @@ from os import path
 from pathlib import PurePath
 
 class Settings(tk.Toplevel):
-    def __init__(self, caller):
+    def __init__(self, caller, controller):
         super().__init__()
         self.caller = caller
+        self.controller = controller
         self.modalresult = 0
         self.withdraw()
         self.status_text = tk.StringVar()
@@ -93,20 +94,32 @@ class Settings(tk.Toplevel):
         nb.add(db_page, text="Database Settings")
         nb.grid(
             column=0,
-            columnspan=3,
+            columnspan=4,
             row=0,
             pady=(0, 2),
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
 
         # status bar and save/close buttons
+        ttk.Label(
+            self,
+            anchor=tk.W,
+            text="Config Version: {}, DB Version: {}".format(
+                self.controller.app_settings.get_app_setting('VERSION'),
+                self.controller.db.version
+            )
+        ).grid(
+            column=0,
+            row=1,
+            sticky=(tk.W)
+        )
         self.status = ttk.Label(
             self,
             anchor=tk.E,
             textvariable=self.status_text
         )
         self.status.grid(
-            column=0,
+            column=1,
             row=1,
             sticky=(tk.E, tk.W)
         )
@@ -117,13 +130,13 @@ class Settings(tk.Toplevel):
             command=self.save
         )
         self.save.grid(
-            column=1,
+            column=2,
             row=1,
             sticky=tk.E
         )
 
         ttk.Button(self, text="Close", command=self.close).grid(
-            column=2,
+            column=3,
             row=1,
             sticky=tk.E
         )
@@ -145,10 +158,10 @@ class Settings(tk.Toplevel):
 
     def get_settings(self):
         self.db_path_text.set(
-            self.caller.controller.app_settings.get_app_setting('DBPATH')
+            self.controller.app_settings.get_app_setting('DBPATH')
         )
         self.backup_path_text.set(
-            self.caller.controller.app_settings.get_app_setting('BACKUPPATH')
+            self.controller.app_settings.get_app_setting('BACKUPPATH')
         )
 
     def check_changes(self, *args, clear_status=True):
@@ -157,7 +170,7 @@ class Settings(tk.Toplevel):
             self.status_text.set("")
 
         if ( not self.backup_path.get() == 
-                self.caller.controller.app_settings.get_app_setting('BACKUPPATH')
+                self.controller.app_settings.get_app_setting('BACKUPPATH')
             ):
             data_changed = True
             self.backup_path.config(bg="Yellow")
@@ -165,7 +178,7 @@ class Settings(tk.Toplevel):
             self.backup_path.config(bg="White")
         
         if ( not self.db_path.get() == 
-                self.caller.controller.app_settings.get_app_setting('DBPATH')):
+                self.controller.app_settings.get_app_setting('DBPATH')):
             data_changed = True
             self.db_path.config(background="Yellow")
         else:
@@ -193,15 +206,15 @@ class Settings(tk.Toplevel):
                 self.destroy()
 
     def save(self):
-        self.caller.controller.app_settings.update_app_setting(
+        self.controller.app_settings.update_app_setting(
             'DBPATH',
             self.db_path.get()
         )
-        self.caller.controller.app_settings.update_app_setting(
+        self.controller.app_settings.update_app_setting(
             'BACKUPPATH',
             self.backup_path.get()
         )
-        if self.caller.controller.app_settings.save():
+        if self.controller.app_settings.save():
             self.status_text.set("Settings Saved")
             self.save.state(['disabled'])
             self.check_changes(clear_status=False)

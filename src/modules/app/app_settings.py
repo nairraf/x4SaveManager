@@ -31,7 +31,8 @@ class AppSettings():
                         "x4SaveManager.db"
                     )
                 ),
-                "BACKUPPATH": "{}".format(self.backup_dir)
+                "BACKUPPATH": "{}".format(self.backup_dir),
+                "VERSION": 1
             }
         }
         self.save()

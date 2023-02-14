@@ -18,6 +18,7 @@ Example:
 import tkinter as tk
 from os import path as ospath
 from modules.app import AppSettings
+from modules.app import Model
 from .start_page import StartPage
 from .status_bar import StatusBar
 from .main_menu import MainMenu
@@ -42,6 +43,9 @@ class WindowController(tk.Tk):
         super().__init__()
         self.approot = approot
         self.moduleroot = moduleroot
+        self.app_settings = AppSettings(self)
+        self.db = Model(self, self.app_settings.get_app_setting("DBPATH"))
+        
         GuiSettings.icon_path = ospath.join(
             ospath.join(approot, "img"), "icon.ico"
         )
@@ -71,7 +75,7 @@ class WindowController(tk.Tk):
         self.statusbar = StatusBar(self.content, self)
 
         self.set_window_title()
-        self.app_settings = AppSettings(self)
+        
         self.startup()
 
     def set_window_title(self, text=""):
