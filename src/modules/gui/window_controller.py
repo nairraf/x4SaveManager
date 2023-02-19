@@ -43,6 +43,7 @@ class WindowController(tk.Tk):
         super().__init__()
         self.approot = approot
         self.moduleroot = moduleroot
+        self.modalresult = 0
         self.app_settings = AppSettings(self)
         self.db = Model(self, self.app_settings.get_app_setting("DBPATH"))
         self.selected_playthrough = None
@@ -103,4 +104,25 @@ class WindowController(tk.Tk):
         MessageWindow(
             self,
             message
+        )
+
+    def check_modal(self):
+        if self.modalresult==1:
+            self.modalresult=0
+            return True
+        
+        return False
+
+    def show_question(
+        self,
+        message,
+        oktext="Yes",
+        canceltext="No"
+    ):
+        MessageWindow(
+            self,
+            message=message,
+            type="question",
+            oktext=oktext,
+            canceltext=canceltext
         )

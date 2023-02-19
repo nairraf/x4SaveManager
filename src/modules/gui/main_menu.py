@@ -25,7 +25,7 @@ class MainMenu():
 
         # file menu
         menu_file.add_command(
-            label='Add Playthrough',
+            label='Create Playthrough',
             command=self.open_add_playthrough
         )
         menu_file.add_separator()
@@ -33,25 +33,37 @@ class MainMenu():
 
         # edit menu
         menu_edit.add_command(
+            label='Edit Selected Playthrough',
+            command=self.edit_playthrough
+        )
+        menu_edit.add_command(
             label='Delete Selected Playthrough',
             command=self.delete_playthrough
         )
+        menu_edit.add_separator()
         menu_edit.add_command(label='Settings', command=self.open_settings)
 
     def delete_playthrough(self):
         if self.controller.selected_playthrough:
-            if self.controller.db.delete_playthrough_by_name(
-                self.controller.selected_playthrough
-            ):
-                self.controller.show_message(
-                    "Playthrough {} has been deleted".format(
-                        self.controller.selected_playthrough
-                    )
+            self.controller.show_question(
+                "Are you sure you want to delete Playthrough:\n{}".format(
+                    self.controller.selected_playthrough
                 )
-                self.controller.selected_playthrough = None
-                self.controller.startpage.refresh_playthroughs()
-                self.controller.startpage.playthroughs.selection_clear(0)
-                self.controller.statusbar.set_playthrough("None")
+            )
+            
+            if self.controller.check_modal():
+                if self.controller.db.delete_playthrough_by_name(
+                    self.controller.selected_playthrough
+                ):
+                    self.controller.show_message(
+                        "Playthrough {} has been deleted".format(
+                            self.controller.selected_playthrough
+                        )
+                    )
+                    self.controller.selected_playthrough = None
+                    self.controller.startpage.refresh_playthroughs()
+                    self.controller.startpage.playthroughs.selection_clear(0)
+                    self.controller.statusbar.set_playthrough("None")
     
     def open_settings(self):
         if self.settings == None:
@@ -72,3 +84,6 @@ class MainMenu():
 
     def add_playthrough_closed(self, *args):
         self.add_playthrough = None
+
+    def edit_playthrough(self):
+        self.controller.startpage.edit_selected_playthrough()
