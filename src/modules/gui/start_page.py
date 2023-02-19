@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
+from .playthrough_page import Playthrough
 
 class StartPage(ttk.Frame):
     """Builds the main application page
@@ -110,11 +111,11 @@ class StartPage(ttk.Frame):
         )
         playthrough_frame.grid_rowconfigure(0, weight=1)
         playthrough_frame.grid_columnconfigure(0, weight=1)
-        playthroughs = tk.Listbox(
+        self.playthroughs = tk.Listbox(
             playthrough_frame,
             listvariable=self.playthrousghs_var
         )
-        playthroughs.grid(
+        self.playthroughs.grid(
             column=0,
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
@@ -122,14 +123,17 @@ class StartPage(ttk.Frame):
         scrollbar = ttk.Scrollbar(
             playthrough_frame,
             orient='vertical',
-            command=playthroughs.yview
+            command=self.playthroughs.yview
         )
-        playthroughs['yscrollcommand'] = scrollbar.set
+        self.playthroughs['yscrollcommand'] = scrollbar.set
         scrollbar.grid(
             column=1,
             row=0,
             sticky=(tk.N, tk.S)
         )
+
+        self.playthroughs.bind("<<ListboxSelect>>", self.select_playthrough)
+        self.playthroughs.bind("<Double-1>", self.edit_playthrough)
 
         # details section
         details_frame = ttk.LabelFrame(
@@ -153,6 +157,7 @@ class StartPage(ttk.Frame):
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+
         # add our root level frames to each side
         pane.add(lframe, minsize=250)
         pane.add(details_frame, minsize=200)
@@ -162,25 +167,29 @@ class StartPage(ttk.Frame):
         """
         txt = Validate.text_input(self.playthrough_var.get())
         if txt:
-            MessageWindow(
-                self,
-                "Add Playthrough:\n  {}".format(
-                    txt
-                ),
-                type="question",
-                oktext="Yes",
-                canceltext="No"
-            )
-            if self.modalresult:
-                # reset modalresult for future operations
-                self.modalresult = None
-                self.controller.db.add_playthrough(txt) 
-                self.refresh_playthroughs()
-                self.controller.statusbar.set_playthrough(txt)
-            
+            Playthrough(self, self.controller, txt)
             self.entry.delete(0,'end')
     
     def refresh_playthroughs(self):
         self.playthrousghs_var.set(
             self.controller.db.get_playthrough_names()
         )
+    
+    def select_playthrough(self, event):
+        if event:
+            cur_selection = event.widget.curselection()
+            if cur_selection:
+                index = cur_selection[0]
+                name = event.widget.get(index)
+                if hasattr(self.controller, 'statusbar'):
+                    self.controller.statusbar.set_playthrough(name)
+                self.controller.selected_playthrough = name
+    
+    def edit_playthrough(self, event):
+        if event:
+            cur_selection = event.widget.curselection()
+            if cur_selection:
+                index = cur_selection[0]
+                name = event.widget.get(index)
+                Playthrough(self, self.controller, name=name)
+                

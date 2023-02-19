@@ -11,35 +11,101 @@ class Model():
     def _connect(self):
         try:
             self.connection = sqlite3.connect(self.dbpath)
-            self.update_version()
+            self.get_db_version()
             self.migrations()
         except sqlite3.Error as e:
             self.controller.show_error(e)
     
-    def update_version(self):
+    def get_db_version(self):
         try:
             self.version, = self.connection.execute(
                 "PRAGMA user_version").fetchone()
         except sqlite3.Error as e:
             self.controller.show_error(e)
 
-    def add_playthrough(self, name, notes=''):
-        query="""
+    def save_playthrough(self, name, notes='', show_error=True, overwrite=False):
+        # we don't use the SQLite REPLACE statement as that performs a DELETTE
+        # followed by a new insert, which creates a new ID for the same name
+        # we need the ID to join with the backups table, so the ID needs to 
+        # stay the same across saves/updates
+        insert_query="""
             INSERT INTO playthroughs (name, notes)
             VALUES (?, ?)
         """
-        cur_playthroughs = self.get_playthrough_names()
-        if name not in cur_playthroughs:
-            with self.connection as c:
-                try:
-                    c.execute(query,(name, notes))
-                except sqlite3.Error as e:
-                    self.controller.show_error(e)
-        else:
-          self.controller.show_error(
-              f"Error adding playthough: {name}\n Playthrough already Exists."
-          )
 
+        update_query="""
+            UPDATE playthroughs SET notes = ?
+            WHERE name = ?
+        """
+       
+        cur_playthroughs = self.get_playthrough_names()
+        entry_exists = False
+        if name in cur_playthroughs:
+            entry_exists = True
+            if overwrite == False:
+                return False
+        
+        with self.connection as c:
+            try:
+                if entry_exists:
+                    c.execute(update_query,(notes, name))
+                else:
+                    c.execute(insert_query,(name, notes))
+                return True
+            except sqlite3.Error as e:
+                if show_error:
+                    self.controller.show_error(e)
+        
+        return False
+
+    def delete_playthrough_by_name(self, name):
+        query="""
+        DELETE FROM playthroughs 
+        WHERE name = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query,(name,))
+                return True
+            except sqlite3.Error as e:
+                    self.controller.show_error(e)
+        
+        return False
+
+    def get_playthrough_by_id(self, id):
+        query="""
+        SELECT id, name, notes FROM playthroughs
+        WHERE id = ?
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    "id": row[0],
+                    "name": row[1],
+                    "notes": row[2]
+                }
+                res = c.execute(query, (id,)).fetchone()
+                return res 
+            except sqlite3.Error as e:
+                    self.controller.show_error(e)
+    
+    def get_playthrough_by_name(self, name):
+        query="""
+        SELECT id, name, notes FROM playthroughs
+        WHERE name = ?
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    "id": row[0],
+                    "name": row[1],
+                    "notes": row[2]
+                }
+                res = c.execute(query, (name,)).fetchone()
+                return res 
+            except sqlite3.Error as e:
+                    self.controller.show_error(e)
+                
     def get_playthrough_names(self):
         query = """
             SELECT name FROM playthroughs
@@ -65,6 +131,6 @@ class Model():
                 with self.connection as c:
                     c.execute(playthroughs_ddl)
                     c.execute("PRAGMA user_version=1")
-                self.update_version()
+                self.get_db_version()
             except sqlite3.Error as e:
                 self.controller.show_error(e)

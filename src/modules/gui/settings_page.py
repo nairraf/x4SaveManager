@@ -2,29 +2,20 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 from .gui_settings import GuiSettings
 from .messages import MessageWindow
+from .new_page_root import NewPageRoot
 from os import path
 from pathlib import PurePath
 
-class Settings(tk.Toplevel):
+class Settings(NewPageRoot):
     def __init__(self, caller, controller):
-        super().__init__()
-        self.caller = caller
-        self.controller = controller
-        self.modalresult = 0
-        self.withdraw()
+        super().__init__(caller, controller)
+        
         self.status_text = tk.StringVar()
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-        self.title("{} - Settings".format(
-            GuiSettings.window_title
-        ))
-        self.iconbitmap(GuiSettings.icon_path)
-        self.config(
-            padx=5,
-            pady=5
-        )
+        
+        self.set_title("Settings")
+        
         self.minsize(650,300)
         
         nb = ttk.Notebook(
@@ -146,15 +137,7 @@ class Settings(tk.Toplevel):
         self.backup_path_text.trace_add('write', self.check_changes)
         self.protocol("WM_DELETE_WINDOW", self.close)
         
-        # place and show the status page
-        self.update()
-        self.geometry("+{}+{}".format(
-            self.master.winfo_x() + 50,
-            self.master.winfo_y() + 50
-        ))
-        self.transient(self.master)
-        self.deiconify()
-        self.focus()
+        self.show_window()
 
     def get_settings(self):
         self.db_path_text.set(
