@@ -141,7 +141,7 @@ class StartPage(ttk.Frame):
             text='Details',
             padding=5
         )
-        details_frame.grid_rowconfigure(0, weight=1)
+        details_frame.grid_rowconfigure(1, weight=1)
         details_frame.grid_columnconfigure(0, weight=1)
         details_frame.grid(
             column=2,
@@ -149,12 +149,57 @@ class StartPage(ttk.Frame):
             rowspan=2,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+        notes_frame=tk.Frame(details_frame)
+        notes_frame.columnconfigure(0, weight=1)
+        notes_frame.grid(
+            column=0,
+            row=0,
+            sticky=(tk.E, tk.W),
+            pady=(0,5)
+        )
+        self.notes = tk.Text(
+            notes_frame,
+            height=8,
+            state='disabled',
+            bg='#EEE',
+            wrap='none'
+        )
+        self.notes.grid(
+            column=0,
+            row=0,
+            sticky=(tk.W, tk.E)
+        )
+        notes_v_scroll = ttk.Scrollbar(
+            notes_frame,
+            orient='vertical',
+            command=self.notes.yview
+        )
+        self.notes['yscrollcommand'] = notes_v_scroll.set
+        notes_v_scroll.grid(
+            column=1,
+            row=0,
+            sticky=(tk.N, tk.S)
+        )
+
+        notes_h_scroll = ttk.Scrollbar(
+            notes_frame,
+            orient='horizontal',
+            command=self.notes.xview
+        )
+        self.notes['xscrollcommand'] = notes_h_scroll.set
+        notes_h_scroll.grid(
+            column=0,
+            columnspan=2,
+            row=1,
+            sticky=(tk.W, tk.E)
+        )
+
         tree = ttk.Treeview(
             details_frame
         )
         tree.grid(
             column=0,
-            row=0,
+            row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
 
@@ -183,7 +228,8 @@ class StartPage(ttk.Frame):
                 name = event.widget.get(index)
                 if hasattr(self.controller, 'statusbar'):
                     self.controller.statusbar.set_playthrough(name)
-                self.controller.selected_playthrough = name
+                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
+                self.set_notes(self.controller.selected_playthrough['notes'])
     
     def edit_playthrough(self, event):
         if event:
@@ -198,6 +244,13 @@ class StartPage(ttk.Frame):
             Playthrough(
                 self,
                 self.controller,
-                name=self.controller.selected_playthrough
+                name=self.controller.selected_playthrough['name']
             )
+
+    def set_notes(self, note):
+        self.notes.configure(state='normal')
+        self.notes.delete('1.0', tk.END)
+        self.notes.insert('1.0', note)
+        self.notes.configure(state='disabled')
+
                 

@@ -71,8 +71,7 @@ class Playthrough(NewPageRoot):
             self.notes_section,
             width=40,
             height=15,
-            wrap='none',
-            
+            wrap='none'
         )
         self.text_editor.grid(
            column=0,
