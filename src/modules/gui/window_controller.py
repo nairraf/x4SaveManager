@@ -78,6 +78,9 @@ class WindowController(tk.Tk):
 
         self.set_window_title()
         
+        if self.app_settings.get_app_setting('X4SAVEPATH') == 'None':
+            msg = "Could not detect default X4 save location.\nPlease set the path for the X4 Save location in settings."
+            self.show_error(msg)
         self.startup()
 
     def set_window_title(self, text=""):

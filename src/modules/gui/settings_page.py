@@ -13,6 +13,7 @@ class Settings(NewPageRoot):
         self.status_text = tk.StringVar()
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
+        self.x4save_path_text = tk.StringVar()
         
         self.set_title("Settings")
         
@@ -76,6 +77,32 @@ class Settings(NewPageRoot):
             sticky=tk.E,
             padx=2
         )
+
+        ttk.Label(app_page, text='X4 Save Path:').grid(
+            column=0,
+            row=2,
+            sticky=tk.W
+        )
+        self.x4save_path = tk.Entry(
+            app_page,
+            textvariable=self.x4save_path_text
+        )
+        self.x4save_path.grid(
+            column=1,
+            row=2,
+            sticky=(tk.W, tk.E)
+        )
+        ttk.Button(
+            app_page,
+            text='Browse',
+            command=self.X4save_browse
+        ).grid(
+            column=2,
+            row=2,
+            sticky=tk.E,
+            padx=2
+        )
+
         # database page
         db_page = ttk.Frame(nb, padding=5)
         db_page.grid_columnconfigure(1, weight=1)
@@ -135,6 +162,7 @@ class Settings(NewPageRoot):
         self.get_settings()
         self.db_path_text.trace_add('write', self.check_changes)
         self.backup_path_text.trace_add('write', self.check_changes)
+        self.x4save_path_text.trace_add('write', self.check_changes)
         self.protocol("WM_DELETE_WINDOW", self.close)
         
         self.show_window()
@@ -145,6 +173,9 @@ class Settings(NewPageRoot):
         )
         self.backup_path_text.set(
             self.controller.app_settings.get_app_setting('BACKUPPATH')
+        )
+        self.x4save_path_text.set(
+            self.controller.app_settings.get_app_setting('X4SAVEPATH')
         )
 
     def check_changes(self, *args, clear_status=True):
@@ -166,6 +197,13 @@ class Settings(NewPageRoot):
             self.db_path.config(background="Yellow")
         else:
             self.db_path.config(background="White")
+
+        if ( not self.x4save_path.get() == 
+                self.controller.app_settings.get_app_setting('X4SAVEPATH')):
+            data_changed = True
+            self.x4save_path.config(background="Yellow")
+        else:
+            self.x4save_path.config(background="White")
         
         if data_changed:
             self.save.state(['!disabled'])
@@ -197,6 +235,10 @@ class Settings(NewPageRoot):
             'BACKUPPATH',
             self.backup_path.get()
         )
+        self.controller.app_settings.update_app_setting(
+            'X4SAVEPATH',
+            self.x4save_path.get()
+        )
         if self.controller.app_settings.save():
             self.status_text.set("Settings Saved")
             self.save.state(['disabled'])
@@ -227,4 +269,16 @@ class Settings(NewPageRoot):
             folder=path.normpath(folder)
             self.backup_path.delete(0,'end')
             self.backup_path.insert(0, folder)
+
+    def X4save_browse(self):
+        initialdir=PurePath(self.x4save_path_text.get()).as_posix()
+        folder=filedialog.askdirectory(
+            mustexist=False,
+            title="X4 Save Location",
+            initialdir=initialdir
+        )
+        if not folder == '':
+            folder=path.normpath(folder)
+            self.x4save_path.delete(0,'end')
+            self.x4save_path.insert(0, folder)
 

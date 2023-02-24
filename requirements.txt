@@ -3,8 +3,9 @@ appdirs==1.4.4
 autopep8==2.0.1
 darkdetect==0.8.0
 future==0.18.3
-pefile==2022.5.30
+pefile==2023.2.7
 pycodestyle==2.10.0
-pyinstaller==5.7.0
-pyinstaller-hooks-contrib==2022.15
+pyinstaller==5.8.0
+pyinstaller-hooks-contrib==2023.0
 pywin32-ctypes==0.2.0
+userpaths==0.1.3

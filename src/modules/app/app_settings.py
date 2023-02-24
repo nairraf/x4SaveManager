@@ -1,6 +1,7 @@
 import json
-from os import path, makedirs
+from os import path, makedirs, listdir
 import appdirs as appdirs
+import userpaths as userpaths
 
 class AppSettings():
     def __init__(self, controller):
@@ -32,10 +33,25 @@ class AppSettings():
                     )
                 ),
                 "BACKUPPATH": "{}".format(self.backup_dir),
+                "X4SAVEPATH": "{}".format(self.get_x4_save_path()),
                 "VERSION": 1
             }
         }
         self.save()
+    
+    def get_x4_save_path(self):
+        try:
+            mydocs = userpaths.get_my_documents()
+            x4root = path.join(mydocs,'Egosoft', 'X4')
+            x4savepath = None
+            if x4root:
+                for name in listdir(x4root):
+                    if 'save' in listdir(path.join(x4root, name)):
+                        x4savepath = path.join(x4root, name, 'save')
+        except Exception as e:
+            self.controller.show_error(e)
+        
+        return x4savepath
 
     def save(self):
         try:
