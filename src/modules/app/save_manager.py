@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import threading
 from time import sleep
+
 if TYPE_CHECKING:
     from modules.gui import WindowController
 
@@ -19,19 +20,12 @@ class SaveManager():
         self.cancel_backup = threading.Event()
 
     def stop_backup(self):
-        if not self.backup_in_progress:
-            self.controller.show_error("No backup in progress..")
-            return
-        
         self.cancel_backup.set()
         self.backup_in_progress = False
         self.controller.startpage.hide_backup_frame()
+        self.controller.event_generate("<<BackupIdle>>")
 
     def start_backup(self):
-        if self.backup_in_progress:
-            self.controller.show_error("Backup already in progress..")
-            return
-        
         self.cancel_backup.clear()
         self.controller.startpage.set_progress_count(0)
         self.backup_in_progress = True
@@ -39,6 +33,7 @@ class SaveManager():
         self.backup_thread = threading.Thread(
             target=self.start_backup_thread
         )
+        self.controller.event_generate("<<BackupRunning>>")
         self.backup_thread.start()
     
     def start_backup_thread(self):

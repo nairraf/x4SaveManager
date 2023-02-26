@@ -53,7 +53,7 @@ class WindowController(tk.Tk):
         # we set the root window row and column to be responsive
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.minsize(width=700, height=350)
+        self.minsize(width=900, height=450)
         self.option_add('*tearOff', False)
 
         # we place a frame which is the size of the entire window, which is the
@@ -131,6 +131,14 @@ class WindowController(tk.Tk):
         self.bind(
             "<<UpdateBackupProgress>>",
             lambda e: self.startpage.increment_progress()
+        )
+        self.bind(
+            "<<BackupIdle>>",
+            lambda e: self.statusbar.set_backup_status('idle')
+        )
+        self.bind(
+            "<<BackupRunning>>",
+            lambda e: self.statusbar.set_backup_status('running...')
         )
         self.protocol("WM_DELETE_WINDOW", self.close)
 
