@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import json
-from os import path, makedirs, listdir
 import appdirs as appdirs
 import userpaths as userpaths
+from os import path, makedirs, listdir
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -40,6 +40,7 @@ class AppSettings():
                 ),
                 "BACKUPPATH": "{}".format(self.backup_dir),
                 "X4SAVEPATH": "{}".format(self.get_x4_save_path()),
+                "BACKUPFREQUENCY_SECONDS": 300,
                 "VERSION": 1
             }
         }

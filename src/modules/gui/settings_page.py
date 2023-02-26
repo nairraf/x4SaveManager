@@ -5,6 +5,7 @@ from .messages import MessageWindow
 from .new_page_root import NewPageRoot
 from os import path
 from pathlib import PurePath
+from modules.app import Validate
 
 class Settings(NewPageRoot):
     def __init__(self, caller, controller):
@@ -14,7 +15,12 @@ class Settings(NewPageRoot):
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
         self.x4save_path_text = tk.StringVar()
-        
+        self.backup_frequency_text = tk.StringVar()
+        self.check_int_wrapper = (
+            self.controller.register(Validate.integer_input),
+            '%P'
+        )
+
         self.set_title("Settings")
         
         self.minsize(650,300)
@@ -103,6 +109,23 @@ class Settings(NewPageRoot):
             padx=2
         )
 
+        ttk.Label(app_page, text='Backup Frequency (sec):').grid(
+            column=0,
+            row=3,
+            sticky=tk.W
+        )
+        self.backup_frequency = tk.Entry(
+            app_page,
+            textvariable=self.backup_frequency_text,
+            validate='key',
+            validatecommand=self.check_int_wrapper
+        )
+        self.backup_frequency.grid(
+            column=1,
+            row=3,
+            sticky=(tk.W, tk.E)
+        )
+
         # database page
         db_page = ttk.Frame(nb, padding=5)
         db_page.grid_columnconfigure(1, weight=1)
@@ -163,6 +186,7 @@ class Settings(NewPageRoot):
         self.db_path_text.trace_add('write', self.check_changes)
         self.backup_path_text.trace_add('write', self.check_changes)
         self.x4save_path_text.trace_add('write', self.check_changes)
+        self.backup_frequency_text.trace_add('write', self.check_changes)
         self.protocol("WM_DELETE_WINDOW", self.close)
         
         self.show_window()
@@ -177,13 +201,16 @@ class Settings(NewPageRoot):
         self.x4save_path_text.set(
             self.controller.app_settings.get_app_setting('X4SAVEPATH')
         )
+        self.backup_frequency_text.set(
+            self.controller.app_settings.get_app_setting('BACKUPFREQUENCY_SECONDS')
+        )
 
     def check_changes(self, *args, clear_status=True):
         data_changed = False
         if clear_status:
             self.status_text.set("")
 
-        if ( not self.backup_path.get() == 
+        if ( not Validate.text_input(self.backup_path.get()) == 
                 self.controller.app_settings.get_app_setting('BACKUPPATH')
             ):
             data_changed = True
@@ -191,20 +218,29 @@ class Settings(NewPageRoot):
         else:
             self.backup_path.config(bg="White")
         
-        if ( not self.db_path.get() == 
+        if ( not Validate.text_input(self.db_path.get()) == 
                 self.controller.app_settings.get_app_setting('DBPATH')):
             data_changed = True
             self.db_path.config(background="Yellow")
         else:
             self.db_path.config(background="White")
 
-        if ( not self.x4save_path.get() == 
+        if ( not Validate.text_input(self.x4save_path.get()) == 
                 self.controller.app_settings.get_app_setting('X4SAVEPATH')):
             data_changed = True
             self.x4save_path.config(background="Yellow")
         else:
             self.x4save_path.config(background="White")
-        
+
+        if ( len(self.backup_frequency.get()) > 0 and 
+             not int(self.backup_frequency.get()) == 
+             self.controller.app_settings.get_app_setting('BACKUPFREQUENCY_SECONDS')
+            ):
+            data_changed = True
+            self.backup_frequency.config(background="Yellow")
+        else:
+            self.backup_frequency.config(background="White")
+
         if data_changed:
             self.save.state(['!disabled'])
         else:
@@ -238,6 +274,10 @@ class Settings(NewPageRoot):
         self.controller.app_settings.update_app_setting(
             'X4SAVEPATH',
             self.x4save_path.get()
+        )
+        self.controller.app_settings.update_app_setting(
+            'BACKUPFREQUENCY_SECONDS',
+            int(self.backup_frequency.get())
         )
         if self.controller.app_settings.save():
             self.status_text.set("Settings Saved")
