@@ -1,10 +1,16 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import json
 from os import path, makedirs, listdir
 import appdirs as appdirs
 import userpaths as userpaths
 
+if TYPE_CHECKING:
+    from modules.gui import WindowController
+
 class AppSettings():
-    def __init__(self, controller):
+    def __init__(self, controller: WindowController):
         self.controller = controller
         self.config_dir = appdirs.user_config_dir(
             "x4SaveManager", False, "Release"

@@ -16,14 +16,9 @@ Example:
     WindowController(approot, moduleroot)
 """
 import tkinter as tk
+import modules.app as appmod
+import modules.gui as guimod
 from os import path as ospath
-from modules.app import AppSettings
-from modules.app import Model
-from .start_page import StartPage
-from .status_bar import StatusBar
-from .main_menu import MainMenu
-from .messages import MessageWindow
-from .gui_settings import GuiSettings
 
 class WindowController(tk.Tk):
     """This class creates the main application window and is responsible
@@ -44,20 +39,21 @@ class WindowController(tk.Tk):
         self.approot = approot
         self.moduleroot = moduleroot
         self.modalresult = 0
-        self.app_settings = AppSettings(self)
-        self.db = Model(self, self.app_settings.get_app_setting("DBPATH"))
+        self.app_settings = appmod.AppSettings(self)
+        self.db = appmod.Model(self, self.app_settings.get_app_setting("DBPATH"))
         self.selected_playthrough = None
+        self.save_manager = appmod.SaveManager(self)
         
-        GuiSettings.icon_path = ospath.join(
+        guimod.GuiSettings.icon_path = ospath.join(
             ospath.join(approot, "img"), "icon.ico"
         )
-        self.iconpath = GuiSettings.icon_path
+        self.iconpath = guimod.GuiSettings.icon_path
         self.iconbitmap(self.iconpath)
 
         # we set the root window row and column to be responsive
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.minsize(width=600, height=255)
+        self.minsize(width=700, height=350)
         self.option_add('*tearOff', False)
 
         # we place a frame which is the size of the entire window, which is the
@@ -72,24 +68,25 @@ class WindowController(tk.Tk):
         # all pages parts should inherit from tk.Frame and
         # use self.content as their parent and take a second
         # argument to pass the WindowController instance (self)
-        self.top_menu = MainMenu(self)
-        self.startpage = StartPage(self.content, self)
-        self.statusbar = StatusBar(self.content, self)
+        self.top_menu = guimod.MainMenu(self)
+        self.startpage = guimod.StartPage(self.content, self)
+        self.statusbar = guimod.StatusBar(self.content, self)
 
         self.set_window_title()
         
         if self.app_settings.get_app_setting('X4SAVEPATH') == 'None':
             msg = "Could not detect default X4 save location.\nPlease set the path for the X4 Save location in settings."
             self.show_error(msg)
+        self.bind_events()
         self.startup()
 
     def set_window_title(self, text=""):
         """Sets the window title
         """
         if not text:
-            self.title(f"{GuiSettings.window_title}")
+            self.title(f"{guimod.GuiSettings.window_title}")
         else:
-            self.title(f"{GuiSettings.window_title} - {text}")
+            self.title(f"{guimod.GuiSettings.window_title} - {text}")
 
     def startup(self):
         """starts the main window TK event loop
@@ -97,14 +94,14 @@ class WindowController(tk.Tk):
         self.mainloop()
 
     def show_error(self, message):
-        MessageWindow(
+        guimod.MessageWindow(
             self,
             message,
             type="error"
         )
 
     def show_message(self, message):
-        MessageWindow(
+        guimod.MessageWindow(
             self,
             message
         )
@@ -122,10 +119,24 @@ class WindowController(tk.Tk):
         oktext="Yes",
         canceltext="No"
     ):
-        MessageWindow(
+        guimod.MessageWindow(
             self,
             message=message,
             type="question",
             oktext=oktext,
             canceltext=canceltext
         )
+    
+    def bind_events(self):
+        self.bind(
+            "<<UpdateBackupProgress>>",
+            lambda e: self.startpage.increment_progress()
+        )
+        self.protocol("WM_DELETE_WINDOW", self.close)
+
+    def close(self):
+        # if the main GUI is closed, check for a running backup process
+        # and cancel it
+        if self.save_manager.backup_in_progress:
+            self.save_manager.cancel_backup.set()
+        self.destroy()

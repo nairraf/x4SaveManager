@@ -1,9 +1,15 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import tkinter as tk
 from .gui_settings import GuiSettings
 from .messages import MessageWindow
 
+if TYPE_CHECKING:
+    from modules.gui import WindowController
+
 class NewPageRoot(tk.Toplevel):
-    def __init__(self, caller, controller):
+    def __init__(self, caller, controller: WindowController):
         super().__init__()
         self.caller = caller
         self.controller = controller

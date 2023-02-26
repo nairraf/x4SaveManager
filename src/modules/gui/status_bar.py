@@ -1,7 +1,13 @@
 """Definition for the StausBar class
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import tkinter as tk
 from tkinter import ttk
+
+if TYPE_CHECKING:
+    from modules.gui import WindowController
 
 class StatusBar(ttk.Frame):
     """Provides a statusbar with a left, center, and right area
@@ -11,7 +17,7 @@ class StatusBar(ttk.Frame):
         tk (Frame): inherits from tk.Frame
     """
 
-    def __init__(self, parent, controller, **kwargs):
+    def __init__(self, parent, controller: WindowController, **kwargs):
         """initializes the statusbar
 
         Args:

@@ -1,12 +1,18 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import tkinter as tk
 from tkinter import Menu
 from .settings_page import Settings
 from .playthrough_page import Playthrough
 
+if TYPE_CHECKING:
+    from modules.gui import WindowController
+
 class MainMenu():
     """Binds the main menu to the root window
     """
-    def __init__(self, controller):
+    def __init__(self, controller: WindowController):
         """Creates the main menu and binds it to the root app window
 
         Args:
@@ -18,39 +24,44 @@ class MainMenu():
         #create our top level menu's
         menubar = Menu(controller)
         self.controller['menu'] = menubar
-        menu_file = Menu(menubar)
-        menu_edit = Menu(menubar)
-        menu_backup = Menu(menubar)
-        menubar.add_cascade(menu=menu_file, label='File')
-        menubar.add_cascade(menu=menu_edit, label='Edit')
-        menubar.add_cascade(menu=menu_backup, label='Backup')
+        self.menu_file = Menu(menubar)
+        self.menu_edit = Menu(menubar)
+        self.menu_backup = Menu(menubar)
+        menubar.add_cascade(menu=self.menu_file, label='File')
+        menubar.add_cascade(menu=self.menu_edit, label='Edit')
+        menubar.add_cascade(menu=self.menu_backup, label='Backup')
 
         # file menu
-        menu_file.add_command(
+        self.menu_file.add_command(
             label='Create Playthrough',
             command=self.open_add_playthrough
         )
-        menu_file.add_separator()
-        menu_file.add_command(label='Exit', command=self.controller.destroy)
+        self.menu_file.add_separator()
+        self.menu_file.add_command(label='Exit', command=self.controller.destroy)
 
         # edit menu
-        menu_edit.add_command(
+        self.menu_edit.add_command(
             label='Edit Selected Playthrough',
             command=self.edit_playthrough
         )
-        menu_edit.add_command(
+        self.menu_edit.add_command(
             label='Delete Selected Playthrough',
             command=self.delete_playthrough
         )
-        menu_edit.add_separator()
-        menu_edit.add_command(label='Settings', command=self.open_settings)
+        self.menu_edit.add_separator()
+        self.menu_edit.add_command(label='Settings', command=self.open_settings)
 
         # backup menu
-        menu_backup.add_command(
+        self.menu_backup.add_command(
             label='Start Backup',
-            command=self.start_backup
+            command=self.start_backup,
+            state='disabled'
         )
-
+        self.menu_backup.add_command(
+            label='Stop Backup',
+            command=self.stop_backup,
+            state='disabled'
+        )
 
     def delete_playthrough(self):
         if self.controller.selected_playthrough:
@@ -99,7 +110,11 @@ class MainMenu():
         self.controller.startpage.edit_selected_playthrough()
 
     def start_backup(self):
-        if self.controller.selected_playthrough:
-            self.controller.show_message('starting backup for playthrough:\n{}'.format(
-                self.controller.selected_playthrough['name']
-            ))
+        self.controller.save_manager.start_backup()
+        self.menu_backup.entryconfigure('Start Backup', state='disabled')
+        self.menu_backup.entryconfigure('Stop Backup', state='normal')
+
+    def stop_backup(self):
+        self.controller.save_manager.stop_backup()
+        self.menu_backup.entryconfigure('Start Backup', state='normal')
+        self.menu_backup.entryconfigure('Stop Backup', state='disabled')

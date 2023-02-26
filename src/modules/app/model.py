@@ -1,7 +1,13 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import sqlite3
 
+if TYPE_CHECKING:
+    from modules.gui import WindowController
+
 class Model():
-    def __init__(self, controller, dbpath):
+    def __init__(self, controller: WindowController, dbpath: str):
         self.dbpath = dbpath
         self.controller = controller
         self.connection = None
@@ -119,6 +125,56 @@ class Model():
             except sqlite3.Error as e:
                 self.controller.show_error(e)
 
+    def check_backup_exists(self, hash):
+        query = """
+            SELECT
+                original_hash
+            FROM backups
+            WHERE original_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: row[0]
+                res = c.execute(query, (hash, )).fetchone()
+                if res:
+                    return True
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return False
+
+    def get_backup_by_hash(self, hash):
+        query = """
+            SELECT
+                playthrough_id
+                , original_filename
+                , save_time
+                , original_hash
+                , x4slot
+                , backup_time
+                , backup_filename
+            FROM backups
+            WHERE original_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    'playthrough_id': row[0],
+                    'original_filename': row[1],
+                    'save_time': row[2],
+                    'original_hash': row[3],
+                    'x4slot': row[4],
+                    'backup_time': row[5],
+                    'backup_filename': row[6]
+                }
+                res = c.execute(query, (hash, )).fetchone()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+
+
     def migrations(self):
         if self.version == 0:
             playthroughs_ddl = """
@@ -127,9 +183,20 @@ class Model():
                     name TEXT NOT NULL UNIQUE,
                     notes TEXT
             );"""
+            backups_ddl = """
+                CREATE TABLE IF NOT EXISTS backups (
+                    playthrough_id INTEGER NOT NULL,
+                    original_filename TEXT,
+                    save_time TEXT,
+                    original_hash TEXT,
+                    x4slot TEXT,
+                    backup_time TEXT,
+                    backup_filename TEXT
+            );"""
             try:
                 with self.connection as c:
                     c.execute(playthroughs_ddl)
+                    c.execute(backups_ddl)
                     c.execute("PRAGMA user_version=1")
                 self.get_db_version()
             except sqlite3.Error as e:

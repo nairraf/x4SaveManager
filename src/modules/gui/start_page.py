@@ -1,10 +1,16 @@
 """Definition for the StartPage Class
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import tkinter as tk
 from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
 from .playthrough_page import Playthrough
+
+if TYPE_CHECKING:
+    from modules.gui import WindowController
 
 class StartPage(ttk.Frame):
     """Builds the main application page
@@ -13,7 +19,7 @@ class StartPage(ttk.Frame):
         tk (Frame): inherits from tk.Frame
     """
 
-    def __init__(self, parent, controller, **kwargs):
+    def __init__(self, parent, controller: WindowController, **kwargs):
         """initializes the StatusPage
 
         Args:
@@ -26,6 +32,7 @@ class StartPage(ttk.Frame):
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
         self.modalresult = None
+        self.progressbar_count = 0
         self.build_page()
         self.refresh_playthroughs()
 
@@ -40,8 +47,27 @@ class StartPage(ttk.Frame):
         # padding = W, N, E, S
         # 25 padding at the bottom to float above the status bar
         self['padding'] = (10,5,10,25)
+        # backup frame is only displayed during a backup
+        self.backup_frame = tk.Frame(
+            self
+        )
+        self.backup_frame.grid_forget()
+        self.backup_frame.grid_columnconfigure(0, weight=1)
+        self.progress = ttk.Progressbar(
+            self.backup_frame,
+            orient="horizontal",
+            mode="determinate",
+            maximum=10
+        )
+        self.progress.grid(
+            column=0,
+            row=0,
+            sticky=(tk.W, tk.E),
+            padx=5,
+            pady=5
+        )
         # add a main pane with two sides for resizable East and West sections
-        pane = tk.PanedWindow(
+        self.pane = tk.PanedWindow(
             self,
             orient='horizontal',
             sashpad=2,
@@ -50,7 +76,7 @@ class StartPage(ttk.Frame):
             showhandle=False,
             sashrelief='flat'
         )
-        pane.grid(
+        self.pane.grid(
             column=0,
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
@@ -58,7 +84,7 @@ class StartPage(ttk.Frame):
 
         # create playthrough section
         lframe=ttk.Frame(
-            pane
+            self.pane
         )
         lframe.grid_columnconfigure(0, weight=1)
         lframe.grid_rowconfigure(1, weight=1)
@@ -137,7 +163,7 @@ class StartPage(ttk.Frame):
 
         # details section
         details_frame = ttk.LabelFrame(
-            pane,
+            self.pane,
             text='Details',
             padding=5
         )
@@ -204,8 +230,8 @@ class StartPage(ttk.Frame):
         )
 
         # add our root level frames to each side
-        pane.add(lframe, minsize=250)
-        pane.add(details_frame, minsize=200)
+        self.pane.add(lframe, minsize=250)
+        self.pane.add(details_frame, minsize=200)
 
     def create_playthrough(self):
         """saves the new playthrough name
@@ -230,6 +256,7 @@ class StartPage(ttk.Frame):
                     self.controller.statusbar.set_playthrough(name)
                 self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
                 self.set_notes(self.controller.selected_playthrough['notes'])
+                self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
     
     def edit_playthrough(self, event):
         if event:
@@ -253,4 +280,30 @@ class StartPage(ttk.Frame):
         self.notes.insert('1.0', note)
         self.notes.configure(state='disabled')
 
-                
+    def show_backup_frame(self):
+        self.pane.grid_forget()
+        self.backup_frame.grid(
+            column=0,
+            row=0,
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+
+    def hide_backup_frame(self):
+        self.backup_frame.grid_forget()
+        self.pane.grid(
+            column=0,
+            row=0,
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+
+    def set_progress_count(self, count):
+        self.progressbar_count = count
+        self.progress['value'] = self.progressbar_count
+
+    def increment_progress(self):
+        if self.progressbar_count < 10:
+            self.progressbar_count += 1
+        else:
+            self.progressbar_count = 0
+
+        self.progress['value'] = self.progressbar_count
