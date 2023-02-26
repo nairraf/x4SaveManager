@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
-from .gui_settings import GuiSettings
 from .messages import MessageWindow
 from .new_page_root import NewPageRoot
 from os import path
@@ -232,10 +231,10 @@ class Settings(NewPageRoot):
         else:
             self.x4save_path.config(background="White")
 
-        if ( len(self.backup_frequency.get()) > 0 and 
-             not int(self.backup_frequency.get()) == 
+        if ( len(self.backup_frequency.get()) > 0 
+             and not int(self.backup_frequency.get()) == 
              self.controller.app_settings.get_app_setting('BACKUPFREQUENCY_SECONDS')
-            ):
+           ):
             data_changed = True
             self.backup_frequency.config(background="Yellow")
         else:
