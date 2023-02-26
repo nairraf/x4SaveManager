@@ -4,11 +4,12 @@ from .new_page_root import NewPageRoot
 from os import path
 
 class Playthrough(NewPageRoot):
-    def __init__(self, caller, controller, name='', notes=''):
+    def __init__(self, caller, controller, name='', notes='', id=None):
         super().__init__(caller, controller)
         
         self.playthrough_name_var = tk.StringVar()
         self.status_label_var = tk.StringVar()
+        self.id = id
         initial_state='disabled'
         self.dbrecord = None
         if name:
@@ -179,9 +180,11 @@ class Playthrough(NewPageRoot):
                 self.modalresult = 0
                 overwrite = True
         
+
         if self.controller.db.save_playthrough(
             name = self.playthrough_name_var.get(),
             notes = self.text_editor.get('1.0', 'end'),
+            id = self.id,
             overwrite = overwrite
         ):
             self.status_label_var.set('Saved Successfully')

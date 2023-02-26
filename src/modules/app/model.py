@@ -29,7 +29,7 @@ class Model():
         except sqlite3.Error as e:
             self.controller.show_error(e)
 
-    def save_playthrough(self, name, notes='', show_error=True, overwrite=False):
+    def save_playthrough(self, name, notes='', id=None, show_error=True, overwrite=False):
         # we don't use the SQLite REPLACE statement as that performs a DELETTE
         # followed by a new insert, which creates a new ID for the same name
         # we need the ID to join with the backups table, so the ID needs to 
@@ -40,21 +40,29 @@ class Model():
         """
 
         update_query="""
-            UPDATE playthroughs SET notes = ?
-            WHERE name = ?
+            UPDATE playthroughs SET name = ?, notes = ?
+            WHERE id = ?
         """
-       
+
+        # see if an entry exists for this playthrough name
         cur_playthroughs = self.get_playthrough_names()
-        entry_exists = False
+        entry = None
+        if id:
+            entry = self.get_playthrough_by_id(id)
         if name in cur_playthroughs:
-            entry_exists = True
+            entry = self.get_playthrough_by_name(name)
+            if not id:
+                id = entry['id']
             if overwrite == False:
                 return False
-        
+
         with self.connection as c:
             try:
-                if entry_exists:
-                    c.execute(update_query,(notes, name))
+                if entry:
+                    c.execute(
+                        update_query,
+                        (name, notes, id)
+                    )
                 else:
                     c.execute(insert_query,(name, notes))
                 return True
@@ -110,7 +118,7 @@ class Model():
                 res = c.execute(query, (name,)).fetchone()
                 return res 
             except sqlite3.Error as e:
-                    self.controller.show_error(e)
+                self.controller.show_error(e)
                 
     def get_playthrough_names(self):
         query = """

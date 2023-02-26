@@ -278,7 +278,8 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
-                Playthrough(self, self.controller, name=name)
+                id = self.controller.db.get_playthrough_by_name(name)['id']
+                Playthrough(self, self.controller, name=name, id=id)
 
     def edit_selected_playthrough(self):
         if self.controller.selected_playthrough:
