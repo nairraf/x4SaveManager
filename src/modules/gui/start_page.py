@@ -47,12 +47,14 @@ class StartPage(ttk.Frame):
         # padding = W, N, E, S
         # 25 padding at the bottom to float above the status bar
         self['padding'] = (10,5,10,25)
+
         # backup frame is only displayed during a backup
         self.backup_frame = tk.Frame(
             self
         )
         self.backup_frame.grid_forget()
         self.backup_frame.grid_columnconfigure(0, weight=1)
+        self.backup_frame.grid_rowconfigure(1, weight=1)
         self.progress = ttk.Progressbar(
             self.backup_frame,
             orient="horizontal",
@@ -63,6 +65,18 @@ class StartPage(ttk.Frame):
             column=0,
             row=0,
             sticky=(tk.W, tk.E),
+            padx=5,
+            pady=5
+        )
+        self.backup_data = tk.Text(
+            self.backup_frame,
+            state='disabled',
+            bg='#EEE'
+        )
+        self.backup_data.grid(
+            column=0,
+            row=1,
+            sticky=(tk.N, tk.E, tk.S, tk.W),
             padx=5,
             pady=5
         )
@@ -307,3 +321,9 @@ class StartPage(ttk.Frame):
             self.progressbar_count = 0
 
         self.progress['value'] = self.progressbar_count
+
+    def update_backup_data(self):
+        self.backup_data.configure(state='normal')
+        self.backup_data.delete('1.0', tk.END)
+        self.backup_data.insert('1.0', self.controller.message_queue.get())
+        self.backup_data.configure(state='disabled')

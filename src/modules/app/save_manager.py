@@ -31,15 +31,20 @@ class SaveManager():
         self.backup_in_progress = True
         self.controller.startpage.show_backup_frame()
         self.backup_thread = threading.Thread(
-            target=self.start_backup_thread
+            target=self.start_backup_thread,
+            args=(self.controller.message_queue,)
         )
         self.controller.event_generate("<<BackupRunning>>")
         self.backup_thread.start()
     
-    def start_backup_thread(self):
+    def start_backup_thread(self, message_queue):
+        i = 0
         while True:
             sleep(1)
             if self.cancel_backup.is_set():
                 break
             self.controller.event_generate("<<UpdateBackupProgress>>")
+            i += 1
+            message_queue.put(i)
+            self.controller.event_generate("<<NewQueueData>>")
     

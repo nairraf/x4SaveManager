@@ -19,6 +19,7 @@ import tkinter as tk
 import modules.app as appmod
 import modules.gui as guimod
 from os import path as ospath
+from queue import Queue
 
 class WindowController(tk.Tk):
     """This class creates the main application window and is responsible
@@ -36,6 +37,7 @@ class WindowController(tk.Tk):
             moduleroot (str): filesystem path to the modules folder
         """
         super().__init__()
+        self.message_queue = Queue()
         self.approot = approot
         self.moduleroot = moduleroot
         self.modalresult = 0
@@ -139,6 +141,10 @@ class WindowController(tk.Tk):
         self.bind(
             "<<BackupRunning>>",
             lambda e: self.statusbar.set_backup_status('running...')
+        )
+        self.bind(
+            "<<NewQueueData>>",
+            lambda e: self.startpage.update_backup_data()
         )
         self.protocol("WM_DELETE_WINDOW", self.close)
 
