@@ -184,10 +184,10 @@ class SaveManager():
                             money = element.attrib['money']
 
                         # while we can process the whole file in a memory
-                        # efficient way, for now we can stop at patches
+                        # efficient way, for now we can stop afer info
                         # as all the details we are interested in are
                         # available at the start of the file before the universe
-                        if element.tag == 'patches':
+                        if element.tag == 'info':
                             break
                         
                         # clear the elements that we are matching on
