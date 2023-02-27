@@ -187,6 +187,8 @@ class SaveManager():
                             del element.getparent()[0]
                     
                     del context
+
+                    os.remove(tempfilepath)
                     
                     db.add_backup(
                         playthrough['id'],
