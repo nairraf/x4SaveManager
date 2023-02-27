@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 import threading
 import gzip
-import bigxml
 from lxml import etree
 import os
 import hashlib
@@ -63,9 +62,9 @@ class SaveManager():
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         
-        # for file in os.scandir(temp_dir):
-        #     if '.xml' in file.name:
-        #         os.remove(file.path)
+        for file in os.scandir(temp_dir):
+            if '.xml' in file.name:
+                os.remove(file.path)
 
         # create our data dictionary that we return through the messaging queue
         # and enter the main backup loop
@@ -147,16 +146,23 @@ class SaveManager():
                         tag=('game','player','patches')
                     )
                     game_version = ''
+                    original_version = ''
                     modified = ''
                     gametime = ''
                     start_type = ''
                     playername = ''
-                    signature  = ''
                     money = ''
 
                     for event, element in context:
                         if element.tag == 'game':
-                            game_version = element.attrib['version']
+                            game_version = "{} build {}".format(
+                                element.attrib['version'],
+                                element.attrib['build']
+                            )
+                            original_version = "{} build {}".format(
+                                element.attrib['original'],
+                                element.attrib['originalbuild']
+                            )
                             modified = element.attrib['modified']
                             gametime = element.attrib['time']
                             start_type = element.attrib['start']
@@ -189,9 +195,13 @@ class SaveManager():
                         hash,
                         now.timestamp(),
                         backup_filename,
+                        game_version,
+                        original_version,
+                        gametime,
+                        start_type,
                         playername,
-                        money=money,
-                        moded=modified
+                        money,
+                        modified
                     )
                 except Exception as e:
                     raise e

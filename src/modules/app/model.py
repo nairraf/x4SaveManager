@@ -198,10 +198,14 @@ class Model():
             file_hash,
             backup_time,
             backup_filename,
-            character_name = '',
-            company_name = '',
-            money = '',
-            moded = ''
+            game_version,
+            original_game_version,
+            playtime,
+            x4_start_type,
+            character_name,
+            money,
+            moded,
+            company_name = ''
     ):
         query = """
         INSERT INTO backups (
@@ -211,12 +215,16 @@ class Model():
             file_hash,
             backup_time,
             backup_filename,
+            game_version,
+            original_game_version,
+            playtime,
+            x4_start_type,
             character_name,
             company_name,
             money,
             moded
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         try:
             with self.connection as c:
@@ -227,6 +235,10 @@ class Model():
                     file_hash,
                     backup_time,
                     backup_filename,
+                    game_version,
+                    original_game_version,
+                    playtime,
+                    x4_start_type,
                     character_name,
                     company_name,
                     money,
@@ -249,9 +261,12 @@ class Model():
                     x4_filename TEXT,
                     x4_save_time TEXT,
                     file_hash TEXT,
-                    x4slot TEXT,
                     backup_time TEXT,
                     backup_filename TEXT,
+                    game_version TEXT,
+                    original_game_version TEXT,
+                    playtime TEXT,
+                    x4_start_type TEXT,
                     character_name TEXT,
                     company_name TEXT,
                     money TEXT,
