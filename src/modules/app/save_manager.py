@@ -143,7 +143,19 @@ class SaveManager():
                     #search the xml in a memory friendly way
                     context = etree.iterparse(
                         tempfilepath,
-                        tag=('game','player','patches')
+                        # in order to save memory as we process the save file
+                        # we have to match on all major tags and clear them
+                        # from memory as we go, searching and recording what we need
+                        # this way the element.clear() calls works as expected
+                        # and it can clear no-longer needed elements from memory
+                        tag=(
+                            'savegame','info','game','player','patches','universe',
+                            'factions','jobs','god','controltextures','component',
+                            'conections','connection','connected','offset','physics',
+                            'economylog','stats','log','messages','script','md',
+                            'missions','aidirector','operations','ventures',
+                            'notifications','ui','signatures'
+                        )
                     )
                     game_version = ''
                     original_version = ''
@@ -171,20 +183,16 @@ class SaveManager():
                             playername = element.attrib['name']
                             money = element.attrib['money']
 
-                        # we don't need to parse the entire file
-                        # stop when we complete the patches tag
+                        # while we can process the whole file in a memory
+                        # efficient way, for now we can stop at patches
+                        # as all the details we are interested in are
+                        # available at the start of the file before the universe
                         if element.tag == 'patches':
                             break
-
+                        
+                        # clear the elements that we are matching on
+                        # as we process the file to keep memory usage down
                         element.clear()
-
-                        # just in case we need to read past patches
-                        # almost everything is in the universe, so
-                        # that element will get stored in RAM
-                        # this flushes it at the end
-                        # kept for historical purposes
-                        while element.getprevious() is not None:
-                            del element.getparent()[0]
                     
                     del context
 
