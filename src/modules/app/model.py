@@ -136,9 +136,9 @@ class Model():
     def check_backup_exists(self, hash):
         query = """
             SELECT
-                original_hash
+                file_hash
             FROM backups
-            WHERE original_hash = ?
+            WHERE file_hash = ?
         """
         with self.connection as c:
             try:
@@ -155,25 +155,33 @@ class Model():
         query = """
             SELECT
                 playthrough_id
-                , original_filename
-                , save_time
-                , original_hash
+                , x4_filename
+                , x4_save_time
+                , file_hash
                 , x4slot
                 , backup_time
                 , backup_filename
+                , character_name
+                , company_name
+                , money
+                , moded
             FROM backups
-            WHERE original_hash = ?
+            WHERE file_hash = ?
         """
         with self.connection as c:
             try:
                 c.row_factory = lambda cursor, row: {
                     'playthrough_id': row[0],
-                    'original_filename': row[1],
-                    'save_time': row[2],
-                    'original_hash': row[3],
+                    'x4_filename': row[1],
+                    'x4_save_time': row[2],
+                    'file_hash': row[3],
                     'x4slot': row[4],
                     'backup_time': row[5],
-                    'backup_filename': row[6]
+                    'backup_filename': row[6],
+                    'character_name': row[7],
+                    'company_name': row[8],
+                    'money': row[9],
+                    'moded': row[10]
                 }
                 res = c.execute(query, (hash, )).fetchone()
                 return res
@@ -182,7 +190,51 @@ class Model():
         
         return None
 
-
+    def add_backup(
+            self,
+            playthrough_id,
+            x4_filename,
+            x4_save_time,
+            file_hash,
+            backup_time,
+            backup_filename,
+            character_name = '',
+            company_name = '',
+            money = '',
+            moded = ''
+    ):
+        query = """
+        INSERT INTO backups (
+            playthrough_id,
+            x4_filename,
+            x4_save_time,
+            file_hash,
+            backup_time,
+            backup_filename,
+            character_name,
+            company_name,
+            money,
+            moded
+        )
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+        """
+        try:
+            with self.connection as c:
+                c.execute(query,(
+                    playthrough_id,
+                    x4_filename,
+                    x4_save_time,
+                    file_hash,
+                    backup_time,
+                    backup_filename,
+                    character_name,
+                    company_name,
+                    money,
+                    moded
+                ))
+        except sqlite3.Error as e:
+            self.controller.show_error(e)
+    
     def migrations(self):
         if self.version == 0:
             playthroughs_ddl = """
@@ -194,12 +246,16 @@ class Model():
             backups_ddl = """
                 CREATE TABLE IF NOT EXISTS backups (
                     playthrough_id INTEGER NOT NULL,
-                    original_filename TEXT,
-                    save_time TEXT,
-                    original_hash TEXT,
+                    x4_filename TEXT,
+                    x4_save_time TEXT,
+                    file_hash TEXT,
                     x4slot TEXT,
                     backup_time TEXT,
-                    backup_filename TEXT
+                    backup_filename TEXT,
+                    character_name TEXT,
+                    company_name TEXT,
+                    money TEXT,
+                    moded BOOL
             );"""
             try:
                 with self.connection as c:

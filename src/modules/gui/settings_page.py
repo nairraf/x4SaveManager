@@ -282,6 +282,7 @@ class Settings(NewPageRoot):
             self.status_text.set("Settings Saved")
             self.save.state(['disabled'])
             self.check_changes(clear_status=False)
+            self.controller.startpage.progress['maximum'] = int(self.backup_frequency.get())
         else:
             self.status_text.set("Error Saving Settings")
 

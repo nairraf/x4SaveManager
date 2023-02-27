@@ -107,7 +107,7 @@ class Playthrough(NewPageRoot):
         if self.dbrecord:
             self.text_editor.insert('1.0',self.dbrecord['notes'])
         
-        # status label
+        # bottom labels
         bottom_frame = ttk.Frame(self.frame)
         bottom_frame.columnconfigure(0, weight=1)
         bottom_frame.grid(
@@ -116,14 +116,25 @@ class Playthrough(NewPageRoot):
             row=2,
             sticky=(tk.W, tk.S, tk.E)
         )
-
+        self.id_label = ttk.Label(
+            bottom_frame,
+            text=f"ID: {self.id}",
+            anchor=tk.W
+        )
+        self.id_label.grid(
+            column=0,
+            row=0,
+            sticky=tk.W,
+            padx=2,
+            pady=2
+        )
         self.status_label = ttk.Label(
             bottom_frame,
             textvariable=self.status_label_var,
             anchor=tk.E
         )
         self.status_label.grid(
-            column=0,
+            column=1,
             row=0,
             sticky=(tk.E,tk.W),
             padx=2,
@@ -137,7 +148,7 @@ class Playthrough(NewPageRoot):
             state=initial_state
         )
         self.save_button.grid(
-            column=1,
+            column=2,
             row=0,
             sticky=(tk.S, tk.E),
             padx=2,
@@ -149,7 +160,7 @@ class Playthrough(NewPageRoot):
             command=self.close
         )
         self.close_button.grid(
-            column=2,
+            column=3,
             row=0,
             sticky=(tk.S, tk.E),
             padx=2,
@@ -171,11 +182,12 @@ class Playthrough(NewPageRoot):
         )
         overwrite = False
         if (
-            playthrough and 
-            self.playthrough_name_var.get() == playthrough["name"]
+            self.id or (
+              playthrough and 
+              self.playthrough_name_var.get() == playthrough["name"]
+            )
         ):
-            self.show_question("""Playthrough by that name already exists.
-            Overwrite Playthrough?""")
+            self.show_question("Are you Sure?")
             if self.modalresult == 1:
                 self.modalresult = 0
                 overwrite = True
@@ -192,6 +204,12 @@ class Playthrough(NewPageRoot):
             self.controller.startpage.refresh_playthroughs()
         else:
             self.status_label_var.set('Save Cancelled or Failed')
+
+        if not self.id:
+            self.id = self.controller.db.get_playthrough_by_name(
+                self.playthrough_name_var.get()
+            )['id']
+            self.id_label['text']=f"ID: {self.id}"
     
     def check_changes(self, *args):
         if (

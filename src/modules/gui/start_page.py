@@ -32,7 +32,9 @@ class StartPage(ttk.Frame):
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
         self.modalresult = None
-        self.progressbar_count = 0
+        self.progressbar_count = self.controller.app_settings.get_app_setting(
+            'BACKUPFREQUENCY_SECONDS'
+        )
         self.build_page()
         self.refresh_playthroughs()
 
@@ -59,7 +61,9 @@ class StartPage(ttk.Frame):
             self.backup_frame,
             orient="horizontal",
             mode="determinate",
-            maximum=10
+            maximum=self.controller.app_settings.get_app_setting(
+                'BACKUPFREQUENCY_SECONDS'
+            )
         )
         self.progress.grid(
             column=0,
@@ -310,21 +314,47 @@ class StartPage(ttk.Frame):
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+        self.backup_data.configure(state='normal')
+        self.backup_data.delete('1.0', tk.END)
+        self.backup_data.configure(state='disabled')
 
     def set_progress_count(self, count):
         self.progressbar_count = count
         self.progress['value'] = self.progressbar_count
 
     def increment_progress(self):
-        if self.progressbar_count < 10:
-            self.progressbar_count += 1
+        count = self.controller.app_settings.get_app_setting(
+            'BACKUPFREQUENCY_SECONDS'
+        )
+        if self.progressbar_count > 0:
+            self.progressbar_count -= 1
         else:
-            self.progressbar_count = 0
+            self.progressbar_count = count
 
         self.progress['value'] = self.progressbar_count
 
     def update_backup_data(self):
+        data = self.controller.message_queue.get()
+        message = f"Next backup check in {data['countdown']} seconds\n"
+        message += f"Total Backup Loops: {data['loops']}\n"
+
+        if data['processing'] == 1:
+            message += "\nNow backing up file: {}   ->  {}\n".format(
+                data['x4saves'][-1]['x4save'],
+                data['x4saves'][-1]['backup_filename']
+            )
+            message += "this may take a few minutes\n"
+            message += "    backing up and extracting info from backup file\n"
+
+        if len(data['x4saves']) > 0 and data['processing'] == 0:
+            message += "\nx4saves backed up:\n"
+            for save in data['x4saves']:
+                message += "    {}  ->   {}\n".format(
+                    save['x4save'],
+                    save['backup_filename']
+                )
+            
         self.backup_data.configure(state='normal')
         self.backup_data.delete('1.0', tk.END)
-        self.backup_data.insert('1.0', self.controller.message_queue.get())
+        self.backup_data.insert('1.0', message)
         self.backup_data.configure(state='disabled')
