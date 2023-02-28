@@ -170,20 +170,20 @@ class SaveManager():
                     for event, element in context:
                         if element.tag == 'game':
                             game_version = "{} build {}".format(
-                                element.attrib['version'],
-                                element.attrib['build']
+                                element.attrib['version'] if 'version' in element.attrib else '',
+                                element.attrib['build'] if 'build' in element.attrib else ''
                             )
                             original_version = "{} build {}".format(
-                                element.attrib['original'],
-                                element.attrib['originalbuild']
+                                element.attrib['original'] if 'original' in element.attrib else '',
+                                element.attrib['originalbuild'] if 'originalbuild' in element.attrib else ''
                             )
-                            modified = element.attrib['modified']
-                            gametime = element.attrib['time']
-                            start_type = element.attrib['start']
+                            modified = element.attrib['modified'] if 'modified' in element.attrib else ''
+                            gametime = element.attrib['time'] if 'time' in element.attrib else ''
+                            start_type = element.attrib['start'] if 'start' in element.attrib else ''
 
                         if element.tag == 'player':
-                            playername = element.attrib['name']
-                            money = element.attrib['money']
+                            playername = element.attrib['name'] if 'name' in element.attrib else ''
+                            money = element.attrib['money'] if 'money' in element.attrib else ''
 
                         # while we can process the whole file in a memory
                         # efficient way, for now we can stop afer info
