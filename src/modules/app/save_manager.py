@@ -8,7 +8,7 @@ import os
 import hashlib
 import datetime
 import shutil
-from time import sleep
+from time import sleep, perf_counter
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -44,7 +44,7 @@ class SaveManager():
                 self.controller.selected_playthrough
             )
         )
-        self.controller.event_generate("<<BackupRunning>>")
+        self.controller.event_generate("<<BackupThreadStarted>>")
         self.backup_thread.start()
     
     def start_backup_thread(self, settings, message_queue, playthrough):
@@ -90,9 +90,6 @@ class SaveManager():
             if self.cancel_backup.is_set():
                 break
             
-            # get the now time
-            now = datetime.datetime.now()
-
             # check to see if we have any x4saves that haven't been backed up
             # first - we get a list of all save files
             # second - we get the hashes for each save file
@@ -113,6 +110,10 @@ class SaveManager():
                     break
 
                 # file has not been backed up
+                # get the now time
+                self.controller.event_generate("<<BackupRunning>>")
+                now = datetime.datetime.now()
+                timer_start = perf_counter()
                 backup_filename = "id{}_{}.xml.gz".format(
                         playthrough['id'],
                         now.strftime("%Y%m%d-%H%M%S")
@@ -123,7 +124,8 @@ class SaveManager():
                 )
                 data['x4saves'].append({
                     'x4save': file.name,
-                    'backup_filename': backup_filename
+                    'backup_filename': backup_filename,
+                    'hash': hash
                 })
                 x4save_time = os.path.getctime(file.path)
                 try:
@@ -197,22 +199,27 @@ class SaveManager():
                     del context
 
                     os.remove(tempfilepath)
-                    
+                    timer_stop = perf_counter()
+                    backup_timespan = timer_stop - timer_start
+                    data['x4saves'][-1]['backup_timespan'] = backup_timespan
+
                     db.add_backup(
-                        playthrough['id'],
-                        file.name,
-                        x4save_time,
-                        hash,
-                        now.timestamp(),
-                        backup_filename,
-                        game_version,
-                        original_version,
-                        gametime,
-                        start_type,
-                        playername,
-                        money,
-                        modified
+                        playthrough_id = playthrough['id'],
+                        x4_filename = file.name,
+                        x4_save_time = x4save_time,
+                        file_hash = hash,
+                        backup_time = now.timestamp(),
+                        backup_filename = backup_filename,
+                        backup_duration = backup_timespan,
+                        game_version = game_version,
+                        original_game_version = original_version,
+                        playtime = gametime,
+                        x4_start_type = start_type,
+                        character_name = playername,
+                        money = money,
+                        moded = modified
                     )
+                    self.controller.event_generate("<<BackupThreadStarted>>")
                 except Exception as e:
                     raise e
             

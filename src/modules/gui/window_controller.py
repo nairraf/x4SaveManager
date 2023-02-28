@@ -140,7 +140,11 @@ class WindowController(tk.Tk):
         )
         self.bind(
             "<<BackupRunning>>",
-            lambda e: self.statusbar.set_backup_status('running...')
+            lambda e: self.statusbar.set_backup_status('backup running')
+        )
+        self.bind(
+            "<<BackupThreadStarted>>",
+            lambda e: self.statusbar.set_backup_status('waiting for new save files')
         )
         self.bind(
             "<<NewQueueData>>",

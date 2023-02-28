@@ -26,8 +26,7 @@ class StatusBar(ttk.Frame):
         """
         super().__init__(parent, **kwargs)
         self._parent = parent
-        self._controller = controller
-        self._left_message = "Selected Playthrough:"
+        self.controller = controller
         self._center_message = "Backup Status:"
 
         # dictionary holding all the messages to display on the status bar
@@ -98,7 +97,15 @@ class StatusBar(ttk.Frame):
 
         'message' should be the name of the playthrough
         """
-        self.messages['left'].set(f"{self._left_message} {message}")
+        if self.controller.selected_playthrough:
+            self.messages['left'].set("Selected Playthrough (ID: {}): {}".format(
+                self.controller.selected_playthrough['id'],
+                message,
+            ))
+        else:
+            self.messages['left'].set("Selected Playthrough: {}".format(
+                message,
+            ))
 
     def set_backup_status(self, message):
         """updates the center status area with 'message'

@@ -31,10 +31,14 @@ class StartPage(ttk.Frame):
         self.controller = controller
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
+        self.backup_note_var = tk.StringVar()
+        self.backup_save_count = 0
+        self.backup_flag_checkbox_var = tk.BooleanVar()
         self.modalresult = None
         self.progressbar_count = self.controller.app_settings.get_app_setting(
             'BACKUPFREQUENCY_SECONDS'
         )
+        self.last_backup_processed = None
         self.build_page()
         self.refresh_playthroughs()
 
@@ -56,7 +60,7 @@ class StartPage(ttk.Frame):
         )
         self.backup_frame.grid_forget()
         self.backup_frame.grid_columnconfigure(0, weight=1)
-        self.backup_frame.grid_rowconfigure(1, weight=1)
+        self.backup_frame.grid_rowconfigure(2, weight=1)
         self.progress = ttk.Progressbar(
             self.backup_frame,
             orient="horizontal",
@@ -72,17 +76,124 @@ class StartPage(ttk.Frame):
             padx=5,
             pady=5
         )
+        self.backup_options_frame = tk.Frame(
+            self.backup_frame
+        )
+        self.backup_options_frame.grid(
+            column=0,
+            row=1,
+            sticky=(tk.W, tk.E),
+            padx=5,
+            pady=5,
+            ipadx=2,
+            ipady=2
+        )
+        self.backup_options_frame.grid_columnconfigure(2, weight=1)
+        self.backup_flag = ttk.Checkbutton(
+            self.backup_options_frame,
+            text="Flag backup",
+            variable=self.backup_flag_checkbox_var
+        )
+        self.backup_flag.grid(
+            column=0,
+            row=0,
+            padx=2
+        )
+        self.backup_note_label = tk.Label(
+            self.backup_options_frame,
+            text="Quick Note:"
+        )
+        self.backup_note_label.grid(
+            column=1,
+            row=0,
+            padx=2
+        )
+        self.backup_note = tk.Entry(
+            self.backup_options_frame,
+            textvariable=self.backup_note_var
+        )
+        self.backup_note.grid(
+            column=2,
+            row=0,
+            padx=2,
+            sticky=(tk.E, tk.W)
+        )
+        self.backup_data_frame = tk.Frame(
+           self.backup_frame
+        )
+        self.backup_data_frame.grid(
+            column=0,
+            row=2,
+            sticky=(tk.W, tk.N, tk.E, tk.S),
+            padx=5,
+            pady=5
+        )
+        self.backup_data_frame.grid_columnconfigure(1, weight=1)
+        self.backup_data_frame.grid_rowconfigure(1, weight=1)
+        self.countdown_label = ttk.Label(
+            self.backup_data_frame,
+            text="Next backup check in (seconds):"
+        )
+        self.countdown_label.grid(
+            column=0,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.E
+        )
+        self.countdown = tk.Label(
+            self.backup_data_frame,
+            anchor='w'
+        )
+        self.countdown.grid(
+            column=1,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.W
+        )
+        self.loop_label = tk.Label(
+            self.backup_data_frame,
+            text="Backup Loops:"
+        )
+        self.loop_label.grid(
+            column=2,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.E
+        )
+        self.loop = tk.Label(
+            self.backup_data_frame
+        )
+        self.loop.grid(
+            column=3,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.W
+        )
         self.backup_data = tk.Text(
-            self.backup_frame,
+            self.backup_data_frame,
             state='disabled',
             bg='#EEE'
         )
         self.backup_data.grid(
             column=0,
+            columnspan=4,
             row=1,
-            sticky=(tk.N, tk.E, tk.S, tk.W),
-            padx=5,
-            pady=5
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+        v_scrollbar = ttk.Scrollbar(
+            self.backup_data_frame,
+            orient='vertical',
+            command=self.backup_data.yview
+        )
+        self.backup_data['yscrollcommand'] = v_scrollbar.set
+        v_scrollbar.grid(
+            column=4,
+            row=1,
+            sticky=(tk.N, tk.S)
         )
         # add a main pane with two sides for resizable East and West sections
         self.pane = tk.PanedWindow(
@@ -270,9 +381,9 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
+                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
                 if hasattr(self.controller, 'statusbar'):
                     self.controller.statusbar.set_playthrough(name)
-                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
                 self.set_notes(self.controller.selected_playthrough['notes'])
                 self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
     
@@ -334,27 +445,53 @@ class StartPage(ttk.Frame):
         self.progress['value'] = self.progressbar_count
 
     def update_backup_data(self):
+        update_data_box = False
+        message = ''
         data = self.controller.message_queue.get()
-        message = f"Next backup check in {data['countdown']} seconds\n"
-        message += f"Total Backup Loops: {data['loops']}\n"
+        self.countdown['text'] = data['countdown']
+        self.loop['text'] = data['loops']
+        
+        # if we just backed up a save, update the flag and notes DB columns
+        if self.last_backup_processed:
+            self.controller.db.update_backup_options(
+                self.backup_flag_checkbox_var.get(),
+                self.backup_note_var.get(),
+                self.last_backup_processed['hash']
+            )
+            self.last_backup_processed = None
+            self.backup_flag_checkbox_var.set(False)
+            self.backup_note.delete(0,'end') 
 
+        # record the backup in progress details and display progress
         if data['processing'] == 1:
-            message += "\nNow backing up file: {}   ->  {}\n".format(
+            message += "Backup now in progress\n\n"
+            self.last_backup_processed = data['x4saves'][-1]
+            message += "Now backing up file: {}   ->  {}\n".format(
                 data['x4saves'][-1]['x4save'],
                 data['x4saves'][-1]['backup_filename']
             )
             message += "this may take a few minutes\n"
-            message += "    backing up and extracting info from backup file\n"
-
+            message += "    now backing up and extracting info from backup file\n\n"
+            
+            update_data_box = True
+            
+        # if we are not processing a backup, display the history of backups
+        # for this session
         if len(data['x4saves']) > 0 and data['processing'] == 0:
             message += "\nx4saves backed up:\n"
             for save in data['x4saves']:
-                message += "    {}  ->   {}\n".format(
+                message += "    {}  ->   {} in  {:0.4f} seconds\n".format(
                     save['x4save'],
-                    save['backup_filename']
+                    save['backup_filename'],
+                    save['backup_timespan']
                 )
+
+        if len(data['x4saves']) > self.backup_save_count and data['processing'] == 0:
+            self.backup_save_count = len(data['x4saves'])
+            update_data_box = True
             
-        self.backup_data.configure(state='normal')
-        self.backup_data.delete('1.0', tk.END)
-        self.backup_data.insert('1.0', message)
-        self.backup_data.configure(state='disabled')
+        if update_data_box:
+            self.backup_data.configure(state='normal')
+            self.backup_data.delete('1.0', tk.END)
+            self.backup_data.insert('1.0', message)
+            self.backup_data.configure(state='disabled')

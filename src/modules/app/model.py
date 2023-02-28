@@ -150,6 +150,21 @@ class Model():
                 self.controller.show_error(e)
         
         return False
+    
+    def update_backup_options(self, flag, notes, hash):
+        query = """
+            UPDATE backups SET flag = ?, notes = ?
+            WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    flag,
+                    notes,
+                    hash, 
+                ))
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
 
     def get_backup_by_hash(self, hash):
         query = """
@@ -158,13 +173,19 @@ class Model():
                 , x4_filename
                 , x4_save_time
                 , file_hash
-                , x4slot
                 , backup_time
                 , backup_filename
+                , backup_duration
+                , game_version
+                , original_game_version
+                , playtime
+                , x4_start_type
                 , character_name
                 , company_name
                 , money
                 , moded
+                , flag
+                , notes
             FROM backups
             WHERE file_hash = ?
         """
@@ -175,13 +196,19 @@ class Model():
                     'x4_filename': row[1],
                     'x4_save_time': row[2],
                     'file_hash': row[3],
-                    'x4slot': row[4],
-                    'backup_time': row[5],
-                    'backup_filename': row[6],
-                    'character_name': row[7],
-                    'company_name': row[8],
-                    'money': row[9],
-                    'moded': row[10]
+                    'backup_time': row[4],
+                    'backup_filename': row[5],
+                    'backup_duration': row[6],
+                    'game_version': row[7],
+                    'original_game_version': row[8],
+                    'playtime': row[9],
+                    'x4_start_type': row[10],
+                    'character_name': row[11],
+                    'company_name': row[12],
+                    'money': row[13],
+                    'moded': row[14],
+                    'flag': row[15],
+                    'notes': row[16]
                 }
                 res = c.execute(query, (hash, )).fetchone()
                 return res
@@ -205,7 +232,10 @@ class Model():
             character_name,
             money,
             moded,
-            company_name = ''
+            backup_duration = None,
+            company_name = '',
+            flag = False,
+            notes = ''
     ):
         query = """
         INSERT INTO backups (
@@ -215,6 +245,7 @@ class Model():
             file_hash,
             backup_time,
             backup_filename,
+            backup_duration,
             game_version,
             original_game_version,
             playtime,
@@ -222,9 +253,11 @@ class Model():
             character_name,
             company_name,
             money,
-            moded
+            moded,
+            flag,
+            notes
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         try:
             with self.connection as c:
@@ -235,6 +268,7 @@ class Model():
                     file_hash,
                     backup_time,
                     backup_filename,
+                    backup_duration,
                     game_version,
                     original_game_version,
                     playtime,
@@ -242,7 +276,9 @@ class Model():
                     character_name,
                     company_name,
                     money,
-                    moded
+                    moded,
+                    flag,
+                    notes
                 ))
         except sqlite3.Error as e:
             self.controller.show_error(e)
@@ -260,9 +296,10 @@ class Model():
                     playthrough_id INTEGER NOT NULL,
                     x4_filename TEXT,
                     x4_save_time TEXT,
-                    file_hash TEXT,
+                    file_hash TEXT NOT NULL UNIQUE,
                     backup_time TEXT,
                     backup_filename TEXT,
+                    backup_duration NUMERIC,
                     game_version TEXT,
                     original_game_version TEXT,
                     playtime TEXT,
@@ -270,7 +307,9 @@ class Model():
                     character_name TEXT,
                     company_name TEXT,
                     money TEXT,
-                    moded BOOL
+                    moded BOOL,
+                    flag BOOL,
+                    notes TEXT
             );"""
             try:
                 with self.connection as c:
