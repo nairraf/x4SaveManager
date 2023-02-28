@@ -349,18 +349,52 @@ class StartPage(ttk.Frame):
             sticky=(tk.W, tk.E)
         )
 
-        tree = ttk.Treeview(
-            details_frame
+        self.tree = ttk.Treeview(
+            details_frame,
+            columns=(
+                'SaveTime',
+                'GameVersion',
+                'Playtime',
+                'Character',
+                'money',
+                'Flag'
+            )
         )
-        tree.grid(
+        self.tree.grid(
             column=0,
             row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
-
+        self.tree.heading('SaveTime', text='Save Time')
+        self.tree.heading('GameVersion', text='Game Version')
+        self.tree.heading('Playtime', text='Playtime')
+        self.tree.heading('Character', text='Character')
+        self.tree.heading('money', text='Money')
+        self.tree.heading('Flag', text='Flag')
+        
         # add our root level frames to each side
         self.pane.add(lframe, minsize=250)
         self.pane.add(details_frame, minsize=200)
+
+    def populate_tree(self):
+        if self.controller.selected_playthrough:
+            backups = self.controller.db.get_backups_by_id(
+                self.controller.selected_playthrough['id']
+            )
+            # delete all previous items in the tree
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            
+            # populate the tree with saves that match the selected playthrough
+            for save in backups:
+                self.tree.insert('', 'end', text=save['backup_filename'], values=(
+                    save['x4_save_time'],
+                    save['game_version'],
+                    save['playtime'],
+                    save['character_name'],
+                    save['money'],
+                    save['flag']
+                ))
 
     def create_playthrough(self):
         """saves the new playthrough name
@@ -386,6 +420,7 @@ class StartPage(ttk.Frame):
                     self.controller.statusbar.set_playthrough(name)
                 self.set_notes(self.controller.selected_playthrough['notes'])
                 self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
+                self.populate_tree()
     
     def edit_playthrough(self, event):
         if event:

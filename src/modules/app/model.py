@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import sqlite3
+from time import ctime
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -16,7 +17,9 @@ class Model():
         
     def _connect(self):
         try:
-            self.connection = sqlite3.connect(self.dbpath)
+            self.connection = sqlite3.connect(
+                self.dbpath
+            )
             self.get_db_version()
             self.migrations()
         except sqlite3.Error as e:
@@ -63,6 +66,7 @@ class Model():
                         update_query,
                         (name, notes, id)
                     )
+                    c.commit()
                 else:
                     c.execute(insert_query,(name, notes))
                 return True
@@ -163,6 +167,7 @@ class Model():
                     notes,
                     hash, 
                 ))
+                c.commit()
             except sqlite3.Error as e:
                 self.controller.show_error(e)
 
@@ -194,9 +199,9 @@ class Model():
                 c.row_factory = lambda cursor, row: {
                     'playthrough_id': row[0],
                     'x4_filename': row[1],
-                    'x4_save_time': row[2],
+                    'x4_save_time': ctime(row[2]),
                     'file_hash': row[3],
-                    'backup_time': row[4],
+                    'backup_time': ctime(row[4]),
                     'backup_filename': row[5],
                     'backup_duration': row[6],
                     'game_version': row[7],
@@ -206,11 +211,62 @@ class Model():
                     'character_name': row[11],
                     'company_name': row[12],
                     'money': row[13],
-                    'moded': row[14],
-                    'flag': row[15],
+                    'moded': bool(row[14]),
+                    'flag': bool(row[15]),
                     'notes': row[16]
                 }
                 res = c.execute(query, (hash, )).fetchone()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+    
+    def get_backups_by_id(self, playthrough_id):
+        query = """
+            SELECT
+                playthrough_id
+                , x4_filename
+                , x4_save_time
+                , file_hash
+                , backup_time
+                , backup_filename
+                , backup_duration
+                , game_version
+                , original_game_version
+                , playtime
+                , x4_start_type
+                , character_name
+                , company_name
+                , money
+                , moded
+                , flag
+                , notes
+            FROM backups
+            WHERE playthrough_id = ?
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    'playthrough_id': row[0],
+                    'x4_filename': row[1],
+                    'x4_save_time': ctime(row[2]),
+                    'file_hash': row[3],
+                    'backup_time': ctime(row[4]),
+                    'backup_filename': row[5],
+                    'backup_duration': row[6],
+                    'game_version': row[7],
+                    'original_game_version': row[8],
+                    'playtime': row[9],
+                    'x4_start_type': row[10],
+                    'character_name': row[11],
+                    'company_name': row[12],
+                    'money': row[13],
+                    'moded': bool(row[14]),
+                    'flag': bool(row[15]),
+                    'notes': row[16]
+                }
+                res = c.execute(query, (playthrough_id, )).fetchall()
                 return res
             except sqlite3.Error as e:
                 self.controller.show_error(e)
@@ -280,6 +336,7 @@ class Model():
                     flag,
                     notes
                 ))
+                c.commit()
         except sqlite3.Error as e:
             self.controller.show_error(e)
     
@@ -295,18 +352,18 @@ class Model():
                 CREATE TABLE IF NOT EXISTS backups (
                     playthrough_id INTEGER NOT NULL,
                     x4_filename TEXT,
-                    x4_save_time TEXT,
+                    x4_save_time TIMESTAMP,
                     file_hash TEXT NOT NULL UNIQUE,
-                    backup_time TEXT,
+                    backup_time TIMESTAMP,
                     backup_filename TEXT,
                     backup_duration NUMERIC,
                     game_version TEXT,
                     original_game_version TEXT,
-                    playtime TEXT,
+                    playtime NUMERIC,
                     x4_start_type TEXT,
                     character_name TEXT,
                     company_name TEXT,
-                    money TEXT,
+                    money NUMERIC,
                     moded BOOL,
                     flag BOOL,
                     notes TEXT
@@ -316,6 +373,7 @@ class Model():
                     c.execute(playthroughs_ddl)
                     c.execute(backups_ddl)
                     c.execute("PRAGMA user_version=1")
+                    c.commit()
                 self.get_db_version()
             except sqlite3.Error as e:
                 self.controller.show_error(e)
