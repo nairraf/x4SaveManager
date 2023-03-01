@@ -45,6 +45,7 @@ class WindowController(tk.Tk):
         self.db = appmod.Model(self, self.app_settings.get_app_setting("DBPATH"))
         self.selected_playthrough = None
         self.save_manager = appmod.SaveManager(self)
+        self.playthrough_manager = appmod.PlaythroughManager(self)
         
         guimod.GuiSettings.icon_path = ospath.join(
             ospath.join(approot, "img"), "icon.ico"

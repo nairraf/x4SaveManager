@@ -356,8 +356,21 @@ class StartPage(ttk.Frame):
                 'GameVersion',
                 'Playtime',
                 'Character',
-                'money',
-                'Flag'
+                'Money',
+                'Moded',
+                'Flag',
+                'Notes',
+                'Hash'
+            ),
+            displaycolumns=(
+                'SaveTime',
+                'GameVersion',
+                'Playtime',
+                'Character',
+                'Money',
+                'Moded',
+                'Flag',
+                'Notes'
             )
         )
         self.tree.grid(
@@ -365,16 +378,70 @@ class StartPage(ttk.Frame):
             row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+        self.tree.column('SaveTime', width=150, anchor='w')
         self.tree.heading('SaveTime', text='Save Time')
+        self.tree.column('GameVersion', width=100, anchor='w')
         self.tree.heading('GameVersion', text='Game Version')
-        self.tree.heading('Playtime', text='Playtime')
+        self.tree.column('Playtime', width=80, anchor='e')
+        self.tree.heading('Playtime', text='Hours')
+        self.tree.column('Character', width=150, anchor='center')
         self.tree.heading('Character', text='Character')
-        self.tree.heading('money', text='Money')
+        self.tree.column('Money', width=100, anchor='e')
+        self.tree.heading('Money', text='Money')
+        self.tree.column('Moded', width=50, anchor='center')
+        self.tree.heading('Moded', text='Moded')
+        self.tree.column('Flag', width=50, anchor='center')
         self.tree.heading('Flag', text='Flag')
+        self.tree.column('Notes', width=200, anchor='w')
+        self.tree.heading('Notes', text='Notes')
+
+        # treeview bindings
+        self.tree.bind("<Double-1>", self.treeview_double_click)
+        self.tree.bind("<Button-3>", self.treeview_right_click)
         
         # add our root level frames to each side
         self.pane.add(lframe, minsize=250)
         self.pane.add(details_frame, minsize=200)
+
+    def treeview_right_click(self, event):
+        indexes = self.tree.selection()
+        menu = tk.Menu(self, tearoff=0)
+        
+        menu.add_command(label="Edit", command=lambda: self.edit_save(indexes))
+        
+        # create our submenu of all playthrough indexes
+        # this will allow us to bulk move saves to a selected playthrough
+        submenu = tk.Menu(menu)
+        menu.add_cascade(menu=submenu, label='Move to Playthough:')
+        for p in self.controller.db.get_playthroughs():
+            submenu.add_command(
+                label=f"{p['name']}",
+                command=lambda p=p: self.move_save(indexes, p['id'])
+            )
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def treeview_double_click(self, event):
+        index = self.tree.selection()
+        self.edit_save(index)
+        
+    def edit_save(self, indexes):
+        # we ignore multi-selections and just edit the first selection          
+        entry = self.tree.item(indexes[0])
+        # TODO: create edit page
+
+    def move_save(self, indexes, playthrough_id):
+        entries = []
+        for idx in indexes:
+            item = self.tree.item(idx)
+            entries.append({
+                'hash': item['values'][8],
+                'filename': item['text']
+            })
+        self.controller.playthrough_manager.move_backups_to_index(entries, playthrough_id)
+        self.populate_tree()
 
     def populate_tree(self):
         if self.controller.selected_playthrough:
@@ -390,10 +457,13 @@ class StartPage(ttk.Frame):
                 self.tree.insert('', 'end', text=save['backup_filename'], values=(
                     save['x4_save_time'],
                     save['game_version'],
-                    save['playtime'],
+                    "{:0.2f}".format(save['playtime']/60/60),
                     save['character_name'],
-                    save['money'],
-                    save['flag']
+                    "${:,.0f}".format(save['money']),
+                    save['moded'],
+                    save['flag'],
+                    save['notes'],
+                    save['file_hash']
                 ))
 
     def create_playthrough(self):

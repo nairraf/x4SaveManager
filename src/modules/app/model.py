@@ -123,6 +123,22 @@ class Model():
                 return res 
             except sqlite3.Error as e:
                 self.controller.show_error(e)
+
+    def get_playthroughs(self):
+        query="""
+        SELECT id, name, notes FROM playthroughs
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    "id": row[0],
+                    "name": row[1],
+                    "notes": row[2]
+                }
+                res = c.execute(query).fetchall()
+                return res 
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
                 
     def get_playthrough_names(self):
         query = """
@@ -165,6 +181,22 @@ class Model():
                 c.execute(query, (
                     flag,
                     notes,
+                    hash, 
+                ))
+                c.commit()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+    def update_backup_playthrough(self, playthrough_id, backup_filename, hash):
+        query = """
+            UPDATE backups SET playthrough_id = ?, backup_filename = ?
+            WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    playthrough_id,
+                    backup_filename,
                     hash, 
                 ))
                 c.commit()
