@@ -5,7 +5,7 @@ from .new_page_root import NewPageRoot
 class Backup(NewPageRoot):
     def __init__(self, caller, controller, file_hash):
         super().__init__(caller, controller)
-        
+        self.set_title("Edit Backup")
         self.playthrough_names = self.controller.db.get_playthrough_names()
         self.playthroughs = self.controller.db.get_playthroughs()
         self.selected_backup = self.controller.db.get_backup_by_hash(file_hash)
@@ -192,7 +192,8 @@ class Backup(NewPageRoot):
         self.flag = ttk.Checkbutton(
             self.frame,
             variable=self.flag_var,
-            text=''
+            text='',
+            command=self.flag_change
         )
         self.flag.grid(
             column=4,
@@ -402,7 +403,7 @@ class Backup(NewPageRoot):
             bottom_frame,
             text="Save",
             command=self.save,
-            state="!disabled"
+            state="disabled"
         )
         self.save_button.grid(
             column=3,
@@ -424,7 +425,18 @@ class Backup(NewPageRoot):
             pady=2
         )
 
+        # bindings
+        self.text_editor.bind("<KeyPress>", self.check_changes)
+        self.pid_dropdown.bind('<<ComboboxSelected>>', self.check_changes)
+
         self.show_window()
+
+    def check_changes(self, *args):
+        self.save_button.state(['!disabled'])
+        self.status_label_var.set('')
+
+    def flag_change(self):
+        self.check_changes()
 
     def save(self):
         pid = self.controller.db.get_playthrough_by_name(self.pid_dropdown.get())['id']
@@ -451,7 +463,7 @@ class Backup(NewPageRoot):
         ):
             self.controller.startpage.populate_tree()
             self.status_label_var.set('Saved Successfully')
+            self.save_button.state(['disabled'])
         
-
     def close(self):
         self.destroy()
