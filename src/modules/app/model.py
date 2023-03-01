@@ -171,6 +171,27 @@ class Model():
         
         return False
     
+    def save_backup(self, playthrough_id, flag, notes, file_hash):
+        query = """
+            UPDATE backups SET playthrough_id = ?, flag = ?, notes = ?
+            WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    playthrough_id,
+                    flag,
+                    notes,
+                    file_hash,
+                ))
+                c.commit()
+                return True
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+        return False
+    
+    
     def update_backup_options(self, flag, notes, hash):
         query = """
             UPDATE backups SET flag = ?, notes = ?

@@ -8,6 +8,7 @@ from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
 from .playthrough_page import Playthrough
+from .backup_page import Backup
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -429,8 +430,9 @@ class StartPage(ttk.Frame):
         
     def edit_save(self, indexes):
         # we ignore multi-selections and just edit the first selection          
-        entry = self.tree.item(indexes[0])
-        # TODO: create edit page
+        item = self.tree.item(indexes[0])
+        Backup(self, self.controller, item['values'][8])
+        
 
     def move_save(self, indexes, playthrough_id):
         entries = []
@@ -462,7 +464,7 @@ class StartPage(ttk.Frame):
                     "${:,.0f}".format(save['money']),
                     save['moded'],
                     save['flag'],
-                    save['notes'],
+                    save['notes'].partition('\n')[0],
                     save['file_hash']
                 ))
 
