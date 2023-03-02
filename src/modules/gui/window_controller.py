@@ -97,6 +97,8 @@ class WindowController(tk.Tk):
         self.mainloop()
 
     def show_error(self, message):
+        """wrapper for MessageWindow to display application level error windows
+        """
         guimod.MessageWindow(
             self,
             message,
@@ -104,12 +106,16 @@ class WindowController(tk.Tk):
         )
 
     def show_message(self, message):
+        """wrapper for MessageWindow to display application level info windows
+        """
         guimod.MessageWindow(
             self,
             message
         )
 
     def check_modal(self):
+        """used to detect the answers to questions from show_question()
+        """
         if self.modalresult==1:
             self.modalresult=0
             return True
@@ -122,6 +128,8 @@ class WindowController(tk.Tk):
         oktext="Yes",
         canceltext="No"
     ):
+        """wrapper for MessageWindow to display application level question windows
+        """
         guimod.MessageWindow(
             self,
             message=message,
@@ -131,6 +139,8 @@ class WindowController(tk.Tk):
         )
     
     def bind_events(self):
+        """main application level event bindings
+        """
         self.bind(
             "<<UpdateBackupProgress>>",
             lambda e: self.startpage.increment_progress()
@@ -154,6 +164,7 @@ class WindowController(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.close)
 
     def close(self):
+        """Responsible for closing the main window"""
         # if the main GUI is closed, check for a running backup process
         # and cancel it
         if self.save_manager.backup_in_progress:

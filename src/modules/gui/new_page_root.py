@@ -1,3 +1,9 @@
+"""Base Class for all new toplevel windows
+
+Centralizes the window title and icon settings and includes that appropriate
+properties for the MessageWindow modal
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -9,7 +15,15 @@ if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class NewPageRoot(tk.Toplevel):
+    """Base clase for all toplevel windows
+    """
     def __init__(self, caller, controller: WindowController):
+        """NewPageRoot constructor
+        
+        Args:
+            caller (tk.TK): the caller
+            controller (WindowController): the application controller
+        """
         super().__init__()
         self.caller = caller
         self.controller = controller
@@ -25,12 +39,23 @@ class NewPageRoot(tk.Toplevel):
         )
 
     def set_title(self, title):
+        """Sets the window title
+        """
         self.title("{} - {}".format(
             GuiSettings.window_title,
             title
         ))
     
     def show_window(self):
+        """Shows the window
+
+        By default all new toplevel windows are hidden to allow them to
+        be built, sized, and positioned on the screen.
+
+        Call show_window() when it's fully built and ready for the user so
+        that the user doesn't see "flashing" where the window appears for a
+        split second and then warps to it's final position
+        """
         # place and show the window
         self.update()
         self.geometry("+{}+{}".format(
@@ -43,6 +68,8 @@ class NewPageRoot(tk.Toplevel):
         self.focus()
 
     def show_error(self, message):
+        """wrapper for MessageWindow for displaying errors dialogs
+        """
         MessageWindow(
             self,
             message,
@@ -50,6 +77,8 @@ class NewPageRoot(tk.Toplevel):
         )
 
     def show_message(self, message):
+        """wrapper for MessageWindow for displaying info dialogs
+        """
         MessageWindow(
             self,
             message
@@ -61,6 +90,8 @@ class NewPageRoot(tk.Toplevel):
         oktext="Yes",
         canceltext="No"
     ):
+        """wrapper for MessageWindow for displaying question dialogs
+        """
         MessageWindow(
             self,
             message=message,

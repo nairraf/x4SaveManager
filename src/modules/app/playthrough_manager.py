@@ -1,3 +1,7 @@
+"""Holds the PlaythroughManager class
+
+PlaythroughManager is responsible for managing playthrough actions
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -9,6 +13,8 @@ if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class PlaythroughManager():
+    """PlaythroughManager Class
+    """
     def __init__(self, controller: WindowController):
         """Manages playthroughs
 
@@ -19,6 +25,16 @@ class PlaythroughManager():
         self.backup_root = self.controller.app_settings.get_app_setting('BACKUPPATH')
 
     def move_backups_to_index(self, backups, playthrough_id):
+        """moves backups to the specified playthrough
+        
+        Args:
+            backups (list): list of dictionaries in the form of:
+                            [{'filename': '', 'hash':''}]
+                            each dictionary element will target the backup with
+                            the specified hash and current filename
+            playthrough_id (int): the id of the playthrough that the backup list
+                                  will be associated with
+        """                
         for back in backups:
             try:
                 src = os.path.join(self.backup_root, back['filename'])

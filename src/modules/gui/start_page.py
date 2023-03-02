@@ -1,4 +1,6 @@
 """Definition for the StartPage Class
+
+Main Application page
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -405,6 +407,11 @@ class StartPage(ttk.Frame):
         self.pane.add(details_frame, minsize=200)
 
     def treeview_right_click(self, event):
+        """Right click context menu for the treeview
+
+        Allows actions for multiple backups, such as editing and moving
+        the backups to another playthrough
+        """
         indexes = self.tree.selection()
         menu = tk.Menu(self, tearoff=0)
         
@@ -425,16 +432,23 @@ class StartPage(ttk.Frame):
             menu.grab_release()
 
     def treeview_double_click(self, event):
+        """Callback to edit the backup that the user double clicked
+        in the treeview
+        """
         index = self.tree.selection()
         self.edit_save(index)
         
     def edit_save(self, indexes):
+        """Open the edit backup window
+        """
         # we ignore multi-selections and just edit the first selection          
         item = self.tree.item(indexes[0])
         Backup(self, self.controller, item['values'][8])
         
 
     def move_save(self, indexes, playthrough_id):
+        """Moves the saves from one playthrough to another
+        """
         entries = []
         for idx in indexes:
             item = self.tree.item(idx)
@@ -446,6 +460,9 @@ class StartPage(ttk.Frame):
         self.populate_tree()
 
     def populate_tree(self):
+        """Populates the treeview with a list of backups for the currently
+        selected playthrough
+        """
         if self.controller.selected_playthrough:
             backups = self.controller.db.get_backups_by_id(
                 self.controller.selected_playthrough['id']
@@ -469,7 +486,7 @@ class StartPage(ttk.Frame):
                 ))
 
     def create_playthrough(self):
-        """saves the new playthrough name
+        """Opens the create playthrough window
         """
         txt = Validate.text_input(self.playthrough_var.get())
         if txt:
@@ -477,11 +494,22 @@ class StartPage(ttk.Frame):
             self.entry.delete(0,'end')
     
     def refresh_playthroughs(self):
+        """re-populates the list of playthroughs
+        """
         self.playthrousghs_var.set(
             self.controller.db.get_playthrough_names()
         )
     
     def select_playthrough(self, event):
+        """Callback when the user selects a new playthrough
+
+        Responsible for calling other application methods to re-organize
+        the windows when the user selects a new playthrough
+
+        Args:
+            event: the tk event to track the current index for the user
+                    selected playthrough
+        """
         if event:
             cur_selection = event.widget.curselection()
             if cur_selection:
@@ -495,6 +523,8 @@ class StartPage(ttk.Frame):
                 self.populate_tree()
     
     def edit_playthrough(self, event):
+        """opens the edit playthrough window on double-click
+        """
         if event:
             cur_selection = event.widget.curselection()
             if cur_selection:
@@ -504,6 +534,8 @@ class StartPage(ttk.Frame):
                 Playthrough(self, self.controller, name=name, id=id)
 
     def edit_selected_playthrough(self):
+        """Opens the edit playthrough window for the currently selected playthrough
+        """
         if self.controller.selected_playthrough:
             Playthrough(
                 self,
@@ -512,12 +544,17 @@ class StartPage(ttk.Frame):
             )
 
     def set_notes(self, note):
+        """callback to control the backup quick notes entry widget
+        """
         self.notes.configure(state='normal')
         self.notes.delete('1.0', tk.END)
         self.notes.insert('1.0', note)
         self.notes.configure(state='disabled')
 
     def show_backup_frame(self):
+        """hides the main frame, and displays the backup frame
+        when the backup thread is running
+        """
         self.pane.grid_forget()
         self.backup_frame.grid(
             column=0,
@@ -526,6 +563,9 @@ class StartPage(ttk.Frame):
         )
 
     def hide_backup_frame(self):
+        """hides the backup from and shows the main frame
+        when the backup thread is stopped
+        """
         self.backup_frame.grid_forget()
         self.pane.grid(
             column=0,
@@ -537,10 +577,18 @@ class StartPage(ttk.Frame):
         self.backup_data.configure(state='disabled')
 
     def set_progress_count(self, count):
+        """sets the progress bar max value
+
+        this is needed when the user changes the number of seconds between
+        backup loops.
+        """
         self.progressbar_count = count
         self.progress['value'] = self.progressbar_count
 
     def increment_progress(self):
+        """decrements the progress bar for a visual indicator of when
+        the next backup loop will happen
+        """
         count = self.controller.app_settings.get_app_setting(
             'BACKUPFREQUENCY_SECONDS'
         )
@@ -552,6 +600,11 @@ class StartPage(ttk.Frame):
         self.progress['value'] = self.progressbar_count
 
     def update_backup_data(self):
+        """responsible for showing the user what is happening
+        or what happened during the backup thread.
+        
+        controls what is shows in the data_box
+        """
         update_data_box = False
         message = ''
         data = self.controller.message_queue.get()

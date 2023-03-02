@@ -1,9 +1,22 @@
+"""Class responsible for creating the edit backup functionality
+"""
+
 import tkinter as tk
 from tkinter import ttk
 from .new_page_root import NewPageRoot
 
 class Backup(NewPageRoot):
+    """The Backup Class which is responsible for the 
+    edit backup functionality
+    """
     def __init__(self, caller, controller, file_hash):
+        """constructure to initialize the Edit backup window
+        
+        Args:
+            caller (tk.Tk): the caller
+            controller (WindowController): our application controller
+            file_hash (str): the file hash to identify the backup to edit
+        """
         super().__init__(caller, controller)
         self.set_title("Edit Backup")
         self.playthrough_names = self.controller.db.get_playthrough_names()
@@ -432,13 +445,21 @@ class Backup(NewPageRoot):
         self.show_window()
 
     def check_changes(self, *args):
+        """Callback to identify window changes to enable the save button
+        """
         self.save_button.state(['!disabled'])
         self.status_label_var.set('')
 
     def flag_change(self):
+        """Callback for the flag checkbox on change
+        """
         self.check_changes()
 
     def save(self):
+        """Callback for the Save button
+        
+        Enables saving changes, persisting them to DB
+        """
         pid = self.controller.db.get_playthrough_by_name(self.pid_dropdown.get())['id']
         if self.selected_backup['playthrough_id'] != pid:
             # playthrough has changed, so update the playthrough properly first
@@ -466,4 +487,5 @@ class Backup(NewPageRoot):
             self.save_button.state(['disabled'])
         
     def close(self):
+        """Closes the window"""
         self.destroy()

@@ -1,3 +1,8 @@
+"""AppSettings Class
+
+Handles all application settings logic, 
+reading and writing to/from the JSON file 
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -10,7 +15,14 @@ if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class AppSettings():
+    """The main AppSettings Class
+    """
     def __init__(self, controller: WindowController):
+        """Constructor
+        
+        Args:
+            controller (WindowController): the main application controller
+        """
         self.controller = controller
         self.config_dir = appdirs.user_config_dir(
             "x4SaveManager", False, "Release"
@@ -26,6 +38,9 @@ class AppSettings():
         self.load_config()
         
     def create_config(self):
+        """Creates a new default configuration if the user configuration
+        json file is not found
+        """
         if not path.exists(self.config_dir):
             makedirs(self.config_dir)
         if not path.exists(self.backup_dir):
@@ -47,6 +62,8 @@ class AppSettings():
         self.save()
     
     def get_x4_save_path(self):
+        """Returns the path to the egosoft default X4 save location
+        on windows this is c:\<user>\Documents\Egosoft\X4\#####\save"""
         try:
             mydocs = userpaths.get_my_documents()
             x4root = path.join(mydocs,'Egosoft', 'X4')
@@ -61,6 +78,8 @@ class AppSettings():
         return x4savepath
 
     def save(self):
+        """Write the application settings to the JSON file
+        """
         try:
             with open(self.config_file, "w") as f:
                 json.dump(self.app_settings, f)
@@ -69,6 +88,8 @@ class AppSettings():
             return False
 
     def load_config(self):
+        """open the json file and reads in the application settings
+        """
         try:
             with open(self.config_file, 'r') as f:
                 self.app_settings = json.load(f)
@@ -76,9 +97,20 @@ class AppSettings():
             self.create_config()
 
     def get_app_setting(self, name):
+        """returns the specified appsetting from the main app_settings dictionary
+
+        Args:
+            name (string): the name of the appsetting to retrieve
+        """
         return self.app_settings["APP"][name]
     
     def update_app_setting(self, name, data):
+        """Updates the specified app setting with new data
+        
+        Args:
+            name (string): the name of the app setting up update
+            data: the new data for the app setting
+        """
         self.app_settings["APP"][name] = data
 
     

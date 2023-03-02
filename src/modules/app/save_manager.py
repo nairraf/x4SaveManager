@@ -1,3 +1,9 @@
+"""holds the SaveManager class
+
+The SaveManager class is responsible for starting and stopping
+the backup process/threads, which actively looks for new X4 saves
+and backs them up
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -14,8 +20,11 @@ if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class SaveManager():
+    """SaveManager Class
+    """
     def __init__(self, controller: WindowController):
-        """Manages the backup save process
+        """Constructor
+        Manages the backup save process
 
         Args:
             controller (WindowController): the root TK controller
@@ -26,12 +35,16 @@ class SaveManager():
         self.cancel_backup = threading.Event()
 
     def stop_backup(self):
+        """Stops the backup process/thread
+        """
         self.cancel_backup.set()
         self.backup_in_progress = False
         self.controller.startpage.hide_backup_frame()
         self.controller.event_generate("<<BackupIdle>>")
 
     def start_backup(self):
+        """starts the backup process/thread
+        """
         self.cancel_backup.clear()
         self.controller.startpage.set_progress_count(0)
         self.backup_in_progress = True
@@ -48,6 +61,17 @@ class SaveManager():
         self.backup_thread.start()
     
     def start_backup_thread(self, settings, message_queue, playthrough):
+        """This is the main backup process which is handed to a dedicated
+        thread.
+        
+        Args:
+            settings (AppSettings): an instance of AppSettings to access the 
+                                    main application settings from a seperate
+                                    thread
+            message_queue (Queue): a thread save queue to pass messages back 
+                                   and forth between threads
+            playthrough (List): an instance of the currently selected playthrough
+        """
         from modules.app import Model
         db = Model(self.controller, settings["APP"]['DBPATH'])
 

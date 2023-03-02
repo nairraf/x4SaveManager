@@ -1,3 +1,8 @@
+"""Holds the Model Class
+
+Responsible for all SQLite database read/writes for the application
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -8,7 +13,16 @@ if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class Model():
+    """The Model Class
+    handles all database logic/io
+    """
     def __init__(self, controller: WindowController, dbpath: str):
+        """constructor
+        
+        Args:
+            controller (WindowController): the main application controller
+            dbpath (string): the full path to the application SQLite database
+        """
         self.dbpath = dbpath
         self.controller = controller
         self.connection = None
@@ -16,6 +30,8 @@ class Model():
         self._connect()
         
     def _connect(self):
+        """Connects to the SQLite Application database
+        """
         try:
             self.connection = sqlite3.connect(
                 self.dbpath
@@ -26,6 +42,11 @@ class Model():
             self.controller.show_error(e)
     
     def get_db_version(self):
+        """Retrieves the SQLite user_version
+        
+        User to track schema version and which migrations are needed
+        across application updates
+        """
         try:
             self.version, = self.connection.execute(
                 "PRAGMA user_version").fetchone()
@@ -33,6 +54,16 @@ class Model():
             self.controller.show_error(e)
 
     def save_playthrough(self, name, notes='', id=None, show_error=True, overwrite=False):
+        """Saves/Updates a new playthrough to the playthroughs table
+
+        Args:
+            name (string): the name of the playthrough
+            notes (string): the notes for the playthrough
+            id (int): specify an ID to update an existing playthrough
+            show_error (bool): default True to show application level errors
+            overwrite (bool): default False. does not allow overwriting a 
+                              playthrough by default. Specify True to overwrite.
+        """
         # we don't use the SQLite REPLACE statement as that performs a DELETTE
         # followed by a new insert, which creates a new ID for the same name
         # we need the ID to join with the backups table, so the ID needs to 
@@ -77,6 +108,11 @@ class Model():
         return False
 
     def delete_playthrough_by_name(self, name):
+        """Deletes a playthrough from the playthroughs table
+        
+        Args:
+            name (str): the name of the playthrough to delete
+        """
         query="""
         DELETE FROM playthroughs 
         WHERE name = ?
@@ -91,6 +127,11 @@ class Model():
         return False
 
     def get_playthrough_by_id(self, id):
+        """retrieve the playthrough with a specific id
+
+        Args:
+            id (int): the id of the playthrough to retreive
+        """
         query="""
         SELECT id, name, notes FROM playthroughs
         WHERE id = ?
@@ -108,6 +149,11 @@ class Model():
                     self.controller.show_error(e)
     
     def get_playthrough_by_name(self, name):
+        """retrieve the playthrough with a specific name
+
+        Args:
+            name (str): the name of the playthrough to retreive
+        """
         query="""
         SELECT id, name, notes FROM playthroughs
         WHERE name = ?
@@ -125,6 +171,8 @@ class Model():
                 self.controller.show_error(e)
 
     def get_playthroughs(self):
+        """get all playthroughs
+        """
         query="""
         SELECT id, name, notes FROM playthroughs
         """
@@ -141,6 +189,10 @@ class Model():
                 self.controller.show_error(e)
                 
     def get_playthrough_names(self):
+        """get only the names of the playthroughs
+        
+        used by widgets when just the names are needed
+        """
         query = """
             SELECT name FROM playthroughs
             ORDER BY name
@@ -154,6 +206,11 @@ class Model():
                 self.controller.show_error(e)
 
     def check_backup_exists(self, hash):
+        """a test to see if a backup exists for a certain file hash
+
+        Args:
+            hash (str): the SHA256 file hash to lookup
+        """
         query = """
             SELECT
                 file_hash
@@ -172,6 +229,15 @@ class Model():
         return False
     
     def save_backup(self, playthrough_id, flag, notes, file_hash):
+        """Used by the edit backup window. Saves the changes for
+        the specific file_hash to the DB.
+
+        Args:
+            playthrough_id (int): the corresponding playthrough id
+            flag (bool): flag this backup
+            notes (str): the notes for this backup
+            file_hash (str): the hash of the backup to update
+        """
         query = """
             UPDATE backups SET playthrough_id = ?, flag = ?, notes = ?
             WHERE file_hash = ?
@@ -193,6 +259,14 @@ class Model():
     
     
     def update_backup_options(self, flag, notes, hash):
+        """updates just the flag and notes fields for a specific
+        backup specified be the file hash
+
+        Args:
+            flag (bool): sets the flag for this backup
+            notes (str): the notes for this backup
+            hash (str): the SHA256 hash of the backup to update
+        """
         query = """
             UPDATE backups SET flag = ?, notes = ?
             WHERE file_hash = ?
@@ -209,6 +283,14 @@ class Model():
                 self.controller.show_error(e)
 
     def update_backup_playthrough(self, playthrough_id, backup_filename, hash):
+        """updates the playthrough_id and the backup_filename for a specific
+        backup specified by hash. Used when moving a backup between playthroughs
+        
+        Args:
+            playthrough_id (int): the playthrough ID to associate this backup with
+            backup_filename (str): the name of the backup file
+            hash (str): the hash of record which will be updated
+        """
         query = """
             UPDATE backups SET playthrough_id = ?, backup_filename = ?
             WHERE file_hash = ?
@@ -225,6 +307,11 @@ class Model():
                 self.controller.show_error(e)
 
     def get_backup_by_hash(self, hash):
+        """Gets a specific backup specified by the hash
+        
+        Args:
+            hash (str): the backup with this hash to retrieve
+        """
         query = """
             SELECT
                 playthrough_id
@@ -276,6 +363,12 @@ class Model():
         return None
     
     def get_backups_by_id(self, playthrough_id):
+        """retreives all backups associated with a specific playthrough
+        specified by it's id
+        
+        Args:
+            playthrough_id (str): the playthrough_id
+        """
         query = """
             SELECT
                 playthrough_id
@@ -346,6 +439,27 @@ class Model():
             flag = False,
             notes = ''
     ):
+        """adds a new backups to the backups tabls
+        
+        Args:
+            playthrough_id (int): the ID of the playthrough for this backup
+            x4_filename (str): the original name of the x4 save
+            x4_save_time (timestamp): the timestamp of the x4 save file
+            file_hash (str): the SHA256 of the x4 save file
+            backup_time (timestamp): the timestamp of the backup file
+            backup_filename (str): the name of the backup file
+            game_version (str): the version of the game for this save file
+            original_game_version (str): the original version of the game for this playthrough
+            playtime (float): number of seconds for this playthrough so far
+            x4_start_type (str): the x4 start that was chosen for this playthrough
+            character_name (str): the name of the in-game character
+            money (float): the amount of money the character owns
+            moded (bool): were mods used for this playthrough
+            backup_duration (float): how long the backup process took
+            company_name (str): the characters company name
+            flag (bool): the importance flag for this backup
+            notes (str): the notes for this backup
+        """
         query = """
         INSERT INTO backups (
             playthrough_id,
@@ -394,6 +508,8 @@ class Model():
             self.controller.show_error(e)
     
     def migrations(self):
+        """Creates the DB Schema on first load and for application updates
+        """
         if self.version == 0:
             playthroughs_ddl = """
                 CREATE TABLE IF NOT EXISTS playthroughs (
