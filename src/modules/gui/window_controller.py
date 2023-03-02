@@ -45,6 +45,7 @@ class WindowController(tk.Tk):
         self.db = appmod.Model(self, self.app_settings.get_app_setting("DBPATH"))
         self.selected_playthrough = None
         self.save_manager = appmod.SaveManager(self)
+        self.playthrough_manager = appmod.PlaythroughManager(self)
         
         guimod.GuiSettings.icon_path = ospath.join(
             ospath.join(approot, "img"), "icon.ico"
@@ -96,6 +97,8 @@ class WindowController(tk.Tk):
         self.mainloop()
 
     def show_error(self, message):
+        """wrapper for MessageWindow to display application level error windows
+        """
         guimod.MessageWindow(
             self,
             message,
@@ -103,12 +106,16 @@ class WindowController(tk.Tk):
         )
 
     def show_message(self, message):
+        """wrapper for MessageWindow to display application level info windows
+        """
         guimod.MessageWindow(
             self,
             message
         )
 
     def check_modal(self):
+        """used to detect the answers to questions from show_question()
+        """
         if self.modalresult==1:
             self.modalresult=0
             return True
@@ -121,6 +128,8 @@ class WindowController(tk.Tk):
         oktext="Yes",
         canceltext="No"
     ):
+        """wrapper for MessageWindow to display application level question windows
+        """
         guimod.MessageWindow(
             self,
             message=message,
@@ -130,6 +139,8 @@ class WindowController(tk.Tk):
         )
     
     def bind_events(self):
+        """main application level event bindings
+        """
         self.bind(
             "<<UpdateBackupProgress>>",
             lambda e: self.startpage.increment_progress()
@@ -140,7 +151,11 @@ class WindowController(tk.Tk):
         )
         self.bind(
             "<<BackupRunning>>",
-            lambda e: self.statusbar.set_backup_status('running...')
+            lambda e: self.statusbar.set_backup_status('backup running')
+        )
+        self.bind(
+            "<<BackupThreadStarted>>",
+            lambda e: self.statusbar.set_backup_status('waiting for new save files')
         )
         self.bind(
             "<<NewQueueData>>",
@@ -149,6 +164,7 @@ class WindowController(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.close)
 
     def close(self):
+        """Responsible for closing the main window"""
         # if the main GUI is closed, check for a running backup process
         # and cancel it
         if self.save_manager.backup_in_progress:

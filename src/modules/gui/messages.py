@@ -1,3 +1,10 @@
+"""Holds MessageWindow Class
+
+The Message Window Class is the root level information/warning/error
+window that the rest of the application can use to display information, 
+questions, or error pop-up windows to the user
+"""
+
 import tkinter as tk
 from tkinter import ttk
 from .gui_settings import GuiSettings
@@ -16,7 +23,6 @@ class MessageWindow(tk.Toplevel):
 
         Args:
             caller (obj): the object which contains the modalresult attribute
-            title (str): the title for the pop-up window
             message (str): the message for the pop-up window
             type (str, optional): info,question,error. Defaults to "info".
             oktext (str, optional): text for the OK button. Defaults to "OK".

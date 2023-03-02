@@ -1,3 +1,5 @@
+"""Small class to hold gui settings common to all windows"""
+
 class GuiSettings():
     """static class with variables that are shared across pages/frames
     """

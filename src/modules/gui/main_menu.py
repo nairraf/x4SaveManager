@@ -1,3 +1,5 @@
+"""the main application menu"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -64,6 +66,8 @@ class MainMenu():
         )
 
     def delete_playthrough(self):
+        """Deletes the currently selected playthrough
+        """
         if self.controller.selected_playthrough:
             self.controller.show_question(
                 "Are you sure you want to delete Playthrough:\n{}".format(
@@ -87,6 +91,8 @@ class MainMenu():
                     self.controller.startpage.set_notes("")
     
     def open_settings(self):
+        """Open the application settings window
+        """
         if self.settings == None:
             self.settings = Settings(self, self.controller)
             self.settings.bind('<Destroy>', self.settings_closed)
@@ -94,9 +100,14 @@ class MainMenu():
             self.settings.focus()
 
     def settings_closed(self, *args):
+        """to track if the settings window is closed or not
+        this way we don't open multiple settings window
+        """
         self.settings = None
 
     def open_add_playthrough(self):
+        """Open the add playthrough window
+        """
         if self.add_playthrough == None:
             self.add_playthrough = Playthrough(self, self.controller)
             self.add_playthrough.bind('<Destroy>', self.add_playthrough_closed)
@@ -104,17 +115,25 @@ class MainMenu():
             self.add_playthrough.focus()
 
     def add_playthrough_closed(self, *args):
+        """tracks if the add playthrough window is already open
+        """
         self.add_playthrough = None
 
     def edit_playthrough(self):
+        """opens the edit playthrough window
+        """
         self.controller.startpage.edit_selected_playthrough()
 
     def start_backup(self):
+        """Starts the backup thread for the currently selected playthrough
+        """
         self.controller.save_manager.start_backup()
         self.menu_backup.entryconfigure('Start Backup', state='disabled')
         self.menu_backup.entryconfigure('Stop Backup', state='normal')
 
     def stop_backup(self):
+        """stops the currently running backup thread
+        """
         self.controller.save_manager.stop_backup()
         self.menu_backup.entryconfigure('Start Backup', state='normal')
         self.menu_backup.entryconfigure('Stop Backup', state='disabled')

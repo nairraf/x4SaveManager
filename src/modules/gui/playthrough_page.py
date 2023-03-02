@@ -1,10 +1,28 @@
+"""Playthrough Class
+
+Responsible for creating/editing playthroughs
+"""
 import tkinter as tk
 from tkinter import ttk
 from .new_page_root import NewPageRoot
 from os import path
 
 class Playthrough(NewPageRoot):
+    """Playthrough is the create/edit playthrough window
+
+    Reponsible for creating/editing playthroughs
+    Inherits from NewPageRoot
+    """
     def __init__(self, caller, controller, name='', notes='', id=None):
+        """Constructor
+        
+        Args:
+            caller (tk.Tk): the caller object
+            controller (WindowController): the application controller
+            name (string): the name of the playthrough
+            notes (string): notes for the playthrough
+            id (int): the ID for this playthrough
+        """
         super().__init__(caller, controller)
         
         self.playthrough_name_var = tk.StringVar()
@@ -172,9 +190,15 @@ class Playthrough(NewPageRoot):
         self.show_window()
 
     def close(self):
+        """closes the playthrough window
+        """
         self.destroy()
 
     def save(self):
+        """save button callback
+        
+        Persists changes to the DB
+        """
         # see if we can find a playthrough with the specified name
         # ask the user if we want to overwrite it with the new data
         playthrough = self.controller.db.get_playthrough_by_name(
@@ -212,6 +236,8 @@ class Playthrough(NewPageRoot):
             self.id_label['text']=f"ID: {self.id}"
     
     def check_changes(self, *args):
+        """Callback to check and enable the save button on change
+        """
         if (
             self.playthrough_name_var.get() and
             self.text_editor.get('1.0', 'end')

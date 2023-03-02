@@ -1,3 +1,6 @@
+"""Main Application Settings Window
+"""
+
 import tkinter as tk
 from tkinter import ttk, filedialog
 from .messages import MessageWindow
@@ -7,7 +10,18 @@ from pathlib import PurePath
 from modules.app import Validate
 
 class Settings(NewPageRoot):
+    """The main application settings window
+    
+    Responsible for managing all application settings
+    Inherits from NewPageRoot
+    """
     def __init__(self, caller, controller):
+        """Constructor
+        
+        Args:
+            caller (tk.Tk): caller object
+            controller (WindowController): application controller
+        """
         super().__init__(caller, controller)
         
         self.status_text = tk.StringVar()
@@ -191,6 +205,10 @@ class Settings(NewPageRoot):
         self.show_window()
 
     def get_settings(self):
+        """Gets the current settings from the JSON file
+        
+        Populates the widgets with the corresponding setting
+        """
         self.db_path_text.set(
             self.controller.app_settings.get_app_setting('DBPATH')
         )
@@ -205,6 +223,11 @@ class Settings(NewPageRoot):
         )
 
     def check_changes(self, *args, clear_status=True):
+        """callback to detect changes and enable/disable the save button
+
+        Args:
+            clear_status (bool): a flag to clear the setting page status text
+        """
         data_changed = False
         if clear_status:
             self.status_text.set("")
@@ -247,6 +270,8 @@ class Settings(NewPageRoot):
             
 
     def close(self):
+        """Checks for changes and closes the settings window
+        """
         if self.save.instate(['disabled']):
             self.destroy()
         else:
@@ -262,6 +287,10 @@ class Settings(NewPageRoot):
                 self.destroy()
 
     def save(self):
+        """callback for the save button
+        
+        persists changes to the DB
+        """
         self.controller.app_settings.update_app_setting(
             'DBPATH',
             self.db_path.get()
@@ -287,6 +316,8 @@ class Settings(NewPageRoot):
             self.status_text.set("Error Saving Settings")
 
     def db_browse(self):
+        """OS folder browser to change and browse to the new database folder
+        """
         initialdir=PurePath(self.db_path_text.get()).parent.as_posix()
         folder=filedialog.askdirectory(
             mustexist=False,
@@ -299,6 +330,8 @@ class Settings(NewPageRoot):
             self.db_path.insert(0, folder)
 
     def backup_browse(self):
+        """OS folder browser to change and browse to the new backup root folder
+        """
         initialdir=PurePath(self.backup_path_text.get()).as_posix()
         folder=filedialog.askdirectory(
             mustexist=False,
@@ -311,6 +344,8 @@ class Settings(NewPageRoot):
             self.backup_path.insert(0, folder)
 
     def X4save_browse(self):
+        """OS folder browser to change and browse to the X4 save parent folder
+        """
         initialdir=PurePath(self.x4save_path_text.get()).as_posix()
         folder=filedialog.askdirectory(
             mustexist=False,

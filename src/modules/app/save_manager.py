@@ -1,3 +1,9 @@
+"""holds the SaveManager class
+
+The SaveManager class is responsible for starting and stopping
+the backup process/threads, which actively looks for new X4 saves
+and backs them up
+"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -8,14 +14,17 @@ import os
 import hashlib
 import datetime
 import shutil
-from time import sleep
+from time import sleep, perf_counter
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
 
 class SaveManager():
+    """SaveManager Class
+    """
     def __init__(self, controller: WindowController):
-        """Manages the backup save process
+        """Constructor
+        Manages the backup save process
 
         Args:
             controller (WindowController): the root TK controller
@@ -26,12 +35,16 @@ class SaveManager():
         self.cancel_backup = threading.Event()
 
     def stop_backup(self):
+        """Stops the backup process/thread
+        """
         self.cancel_backup.set()
         self.backup_in_progress = False
         self.controller.startpage.hide_backup_frame()
         self.controller.event_generate("<<BackupIdle>>")
 
     def start_backup(self):
+        """starts the backup process/thread
+        """
         self.cancel_backup.clear()
         self.controller.startpage.set_progress_count(0)
         self.backup_in_progress = True
@@ -44,10 +57,21 @@ class SaveManager():
                 self.controller.selected_playthrough
             )
         )
-        self.controller.event_generate("<<BackupRunning>>")
+        self.controller.event_generate("<<BackupThreadStarted>>")
         self.backup_thread.start()
     
     def start_backup_thread(self, settings, message_queue, playthrough):
+        """This is the main backup process which is handed to a dedicated
+        thread.
+        
+        Args:
+            settings (AppSettings): an instance of AppSettings to access the 
+                                    main application settings from a seperate
+                                    thread
+            message_queue (Queue): a thread save queue to pass messages back 
+                                   and forth between threads
+            playthrough (List): an instance of the currently selected playthrough
+        """
         from modules.app import Model
         db = Model(self.controller, settings["APP"]['DBPATH'])
 
@@ -90,9 +114,6 @@ class SaveManager():
             if self.cancel_backup.is_set():
                 break
             
-            # get the now time
-            now = datetime.datetime.now()
-
             # check to see if we have any x4saves that haven't been backed up
             # first - we get a list of all save files
             # second - we get the hashes for each save file
@@ -113,6 +134,10 @@ class SaveManager():
                     break
 
                 # file has not been backed up
+                # get the now time
+                self.controller.event_generate("<<BackupRunning>>")
+                now = datetime.datetime.now()
+                timer_start = perf_counter()
                 backup_filename = "id{}_{}.xml.gz".format(
                         playthrough['id'],
                         now.strftime("%Y%m%d-%H%M%S")
@@ -123,7 +148,8 @@ class SaveManager():
                 )
                 data['x4saves'].append({
                     'x4save': file.name,
-                    'backup_filename': backup_filename
+                    'backup_filename': backup_filename,
+                    'hash': hash
                 })
                 x4save_time = os.path.getctime(file.path)
                 try:
@@ -168,20 +194,20 @@ class SaveManager():
                     for event, element in context:
                         if element.tag == 'game':
                             game_version = "{} build {}".format(
-                                element.attrib['version'],
-                                element.attrib['build']
+                                element.attrib['version'] if 'version' in element.attrib else '',
+                                element.attrib['build'] if 'build' in element.attrib else ''
                             )
                             original_version = "{} build {}".format(
-                                element.attrib['original'],
-                                element.attrib['originalbuild']
+                                element.attrib['original'] if 'original' in element.attrib else '',
+                                element.attrib['originalbuild'] if 'originalbuild' in element.attrib else ''
                             )
-                            modified = element.attrib['modified']
-                            gametime = element.attrib['time']
-                            start_type = element.attrib['start']
+                            modified = element.attrib['modified'] if 'modified' in element.attrib else ''
+                            gametime = element.attrib['time'] if 'time' in element.attrib else ''
+                            start_type = element.attrib['start'] if 'start' in element.attrib else ''
 
                         if element.tag == 'player':
-                            playername = element.attrib['name']
-                            money = element.attrib['money']
+                            playername = element.attrib['name'] if 'name' in element.attrib else ''
+                            money = element.attrib['money'] if 'money' in element.attrib else ''
 
                         # while we can process the whole file in a memory
                         # efficient way, for now we can stop afer info
@@ -197,22 +223,27 @@ class SaveManager():
                     del context
 
                     os.remove(tempfilepath)
-                    
+                    timer_stop = perf_counter()
+                    backup_timespan = timer_stop - timer_start
+                    data['x4saves'][-1]['backup_timespan'] = backup_timespan
+
                     db.add_backup(
-                        playthrough['id'],
-                        file.name,
-                        x4save_time,
-                        hash,
-                        now.timestamp(),
-                        backup_filename,
-                        game_version,
-                        original_version,
-                        gametime,
-                        start_type,
-                        playername,
-                        money,
-                        modified
+                        playthrough_id = playthrough['id'],
+                        x4_filename = file.name,
+                        x4_save_time = x4save_time,
+                        file_hash = hash,
+                        backup_time = now.timestamp(),
+                        backup_filename = backup_filename,
+                        backup_duration = backup_timespan,
+                        game_version = game_version,
+                        original_game_version = original_version,
+                        playtime = gametime,
+                        x4_start_type = start_type,
+                        character_name = playername,
+                        money = money,
+                        moded = modified
                     )
+                    self.controller.event_generate("<<BackupThreadStarted>>")
                 except Exception as e:
                     raise e
             

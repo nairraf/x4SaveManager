@@ -1,4 +1,6 @@
 """Definition for the StartPage Class
+
+Main Application page
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -8,6 +10,7 @@ from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
 from .playthrough_page import Playthrough
+from .backup_page import Backup
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -31,10 +34,14 @@ class StartPage(ttk.Frame):
         self.controller = controller
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
+        self.backup_note_var = tk.StringVar()
+        self.backup_save_count = 0
+        self.backup_flag_checkbox_var = tk.BooleanVar()
         self.modalresult = None
         self.progressbar_count = self.controller.app_settings.get_app_setting(
             'BACKUPFREQUENCY_SECONDS'
         )
+        self.last_backup_processed = None
         self.build_page()
         self.refresh_playthroughs()
 
@@ -56,7 +63,7 @@ class StartPage(ttk.Frame):
         )
         self.backup_frame.grid_forget()
         self.backup_frame.grid_columnconfigure(0, weight=1)
-        self.backup_frame.grid_rowconfigure(1, weight=1)
+        self.backup_frame.grid_rowconfigure(2, weight=1)
         self.progress = ttk.Progressbar(
             self.backup_frame,
             orient="horizontal",
@@ -72,17 +79,124 @@ class StartPage(ttk.Frame):
             padx=5,
             pady=5
         )
+        self.backup_options_frame = tk.Frame(
+            self.backup_frame
+        )
+        self.backup_options_frame.grid(
+            column=0,
+            row=1,
+            sticky=(tk.W, tk.E),
+            padx=5,
+            pady=5,
+            ipadx=2,
+            ipady=2
+        )
+        self.backup_options_frame.grid_columnconfigure(2, weight=1)
+        self.backup_flag = ttk.Checkbutton(
+            self.backup_options_frame,
+            text="Flag backup",
+            variable=self.backup_flag_checkbox_var
+        )
+        self.backup_flag.grid(
+            column=0,
+            row=0,
+            padx=2
+        )
+        self.backup_note_label = tk.Label(
+            self.backup_options_frame,
+            text="Quick Note:"
+        )
+        self.backup_note_label.grid(
+            column=1,
+            row=0,
+            padx=2
+        )
+        self.backup_note = tk.Entry(
+            self.backup_options_frame,
+            textvariable=self.backup_note_var
+        )
+        self.backup_note.grid(
+            column=2,
+            row=0,
+            padx=2,
+            sticky=(tk.E, tk.W)
+        )
+        self.backup_data_frame = tk.Frame(
+           self.backup_frame
+        )
+        self.backup_data_frame.grid(
+            column=0,
+            row=2,
+            sticky=(tk.W, tk.N, tk.E, tk.S),
+            padx=5,
+            pady=5
+        )
+        self.backup_data_frame.grid_columnconfigure(1, weight=1)
+        self.backup_data_frame.grid_rowconfigure(1, weight=1)
+        self.countdown_label = ttk.Label(
+            self.backup_data_frame,
+            text="Next backup check in (seconds):"
+        )
+        self.countdown_label.grid(
+            column=0,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.E
+        )
+        self.countdown = tk.Label(
+            self.backup_data_frame,
+            anchor='w'
+        )
+        self.countdown.grid(
+            column=1,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.W
+        )
+        self.loop_label = tk.Label(
+            self.backup_data_frame,
+            text="Backup Loops:"
+        )
+        self.loop_label.grid(
+            column=2,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.E
+        )
+        self.loop = tk.Label(
+            self.backup_data_frame
+        )
+        self.loop.grid(
+            column=3,
+            row=0,
+            padx=2,
+            pady=2,
+            sticky=tk.W
+        )
         self.backup_data = tk.Text(
-            self.backup_frame,
+            self.backup_data_frame,
             state='disabled',
             bg='#EEE'
         )
         self.backup_data.grid(
             column=0,
+            columnspan=4,
             row=1,
-            sticky=(tk.N, tk.E, tk.S, tk.W),
-            padx=5,
-            pady=5
+            sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+        v_scrollbar = ttk.Scrollbar(
+            self.backup_data_frame,
+            orient='vertical',
+            command=self.backup_data.yview
+        )
+        self.backup_data['yscrollcommand'] = v_scrollbar.set
+        v_scrollbar.grid(
+            column=4,
+            row=1,
+            sticky=(tk.N, tk.S)
         )
         # add a main pane with two sides for resizable East and West sections
         self.pane = tk.PanedWindow(
@@ -238,21 +352,141 @@ class StartPage(ttk.Frame):
             sticky=(tk.W, tk.E)
         )
 
-        tree = ttk.Treeview(
-            details_frame
+        self.tree = ttk.Treeview(
+            details_frame,
+            columns=(
+                'SaveTime',
+                'GameVersion',
+                'Playtime',
+                'Character',
+                'Money',
+                'Moded',
+                'Flag',
+                'Notes',
+                'Hash'
+            ),
+            displaycolumns=(
+                'SaveTime',
+                'GameVersion',
+                'Playtime',
+                'Character',
+                'Money',
+                'Moded',
+                'Flag',
+                'Notes'
+            )
         )
-        tree.grid(
+        self.tree.grid(
             column=0,
             row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+        self.tree.column('SaveTime', width=150, anchor='w')
+        self.tree.heading('SaveTime', text='Save Time')
+        self.tree.column('GameVersion', width=100, anchor='w')
+        self.tree.heading('GameVersion', text='Game Version')
+        self.tree.column('Playtime', width=80, anchor='e')
+        self.tree.heading('Playtime', text='Hours')
+        self.tree.column('Character', width=150, anchor='center')
+        self.tree.heading('Character', text='Character')
+        self.tree.column('Money', width=100, anchor='e')
+        self.tree.heading('Money', text='Money')
+        self.tree.column('Moded', width=50, anchor='center')
+        self.tree.heading('Moded', text='Moded')
+        self.tree.column('Flag', width=50, anchor='center')
+        self.tree.heading('Flag', text='Flag')
+        self.tree.column('Notes', width=200, anchor='w')
+        self.tree.heading('Notes', text='Notes')
 
+        # treeview bindings
+        self.tree.bind("<Double-1>", self.treeview_double_click)
+        self.tree.bind("<Button-3>", self.treeview_right_click)
+        
         # add our root level frames to each side
         self.pane.add(lframe, minsize=250)
         self.pane.add(details_frame, minsize=200)
 
+    def treeview_right_click(self, event):
+        """Right click context menu for the treeview
+
+        Allows actions for multiple backups, such as editing and moving
+        the backups to another playthrough
+        """
+        indexes = self.tree.selection()
+        menu = tk.Menu(self, tearoff=0)
+        
+        menu.add_command(label="Edit", command=lambda: self.edit_save(indexes))
+        
+        # create our submenu of all playthrough indexes
+        # this will allow us to bulk move saves to a selected playthrough
+        submenu = tk.Menu(menu)
+        menu.add_cascade(menu=submenu, label='Move to Playthough:')
+        for p in self.controller.db.get_playthroughs():
+            submenu.add_command(
+                label=f"{p['name']}",
+                command=lambda p=p: self.move_save(indexes, p['id'])
+            )
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def treeview_double_click(self, event):
+        """Callback to edit the backup that the user double clicked
+        in the treeview
+        """
+        index = self.tree.selection()
+        self.edit_save(index)
+        
+    def edit_save(self, indexes):
+        """Open the edit backup window
+        """
+        # we ignore multi-selections and just edit the first selection          
+        item = self.tree.item(indexes[0])
+        Backup(self, self.controller, item['values'][8])
+        
+
+    def move_save(self, indexes, playthrough_id):
+        """Moves the saves from one playthrough to another
+        """
+        entries = []
+        for idx in indexes:
+            item = self.tree.item(idx)
+            entries.append({
+                'hash': item['values'][8],
+                'filename': item['text']
+            })
+        self.controller.playthrough_manager.move_backups_to_index(entries, playthrough_id)
+        self.populate_tree()
+
+    def populate_tree(self):
+        """Populates the treeview with a list of backups for the currently
+        selected playthrough
+        """
+        if self.controller.selected_playthrough:
+            backups = self.controller.db.get_backups_by_id(
+                self.controller.selected_playthrough['id']
+            )
+            # delete all previous items in the tree
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            
+            # populate the tree with saves that match the selected playthrough
+            for save in backups:
+                self.tree.insert('', 'end', text=save['backup_filename'], values=(
+                    save['x4_save_time'],
+                    save['game_version'],
+                    "{:0.2f}".format(save['playtime']/60/60),
+                    save['character_name'],
+                    "${:,.0f}".format(save['money']),
+                    save['moded'],
+                    save['flag'],
+                    save['notes'].partition('\n')[0],
+                    save['file_hash']
+                ))
+
     def create_playthrough(self):
-        """saves the new playthrough name
+        """Opens the create playthrough window
         """
         txt = Validate.text_input(self.playthrough_var.get())
         if txt:
@@ -260,23 +494,37 @@ class StartPage(ttk.Frame):
             self.entry.delete(0,'end')
     
     def refresh_playthroughs(self):
+        """re-populates the list of playthroughs
+        """
         self.playthrousghs_var.set(
             self.controller.db.get_playthrough_names()
         )
     
     def select_playthrough(self, event):
+        """Callback when the user selects a new playthrough
+
+        Responsible for calling other application methods to re-organize
+        the windows when the user selects a new playthrough
+
+        Args:
+            event: the tk event to track the current index for the user
+                    selected playthrough
+        """
         if event:
             cur_selection = event.widget.curselection()
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
+                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
                 if hasattr(self.controller, 'statusbar'):
                     self.controller.statusbar.set_playthrough(name)
-                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
                 self.set_notes(self.controller.selected_playthrough['notes'])
                 self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
+                self.populate_tree()
     
     def edit_playthrough(self, event):
+        """opens the edit playthrough window on double-click
+        """
         if event:
             cur_selection = event.widget.curselection()
             if cur_selection:
@@ -286,6 +534,8 @@ class StartPage(ttk.Frame):
                 Playthrough(self, self.controller, name=name, id=id)
 
     def edit_selected_playthrough(self):
+        """Opens the edit playthrough window for the currently selected playthrough
+        """
         if self.controller.selected_playthrough:
             Playthrough(
                 self,
@@ -294,12 +544,17 @@ class StartPage(ttk.Frame):
             )
 
     def set_notes(self, note):
+        """callback to control the backup quick notes entry widget
+        """
         self.notes.configure(state='normal')
         self.notes.delete('1.0', tk.END)
         self.notes.insert('1.0', note)
         self.notes.configure(state='disabled')
 
     def show_backup_frame(self):
+        """hides the main frame, and displays the backup frame
+        when the backup thread is running
+        """
         self.pane.grid_forget()
         self.backup_frame.grid(
             column=0,
@@ -308,6 +563,9 @@ class StartPage(ttk.Frame):
         )
 
     def hide_backup_frame(self):
+        """hides the backup from and shows the main frame
+        when the backup thread is stopped
+        """
         self.backup_frame.grid_forget()
         self.pane.grid(
             column=0,
@@ -319,10 +577,18 @@ class StartPage(ttk.Frame):
         self.backup_data.configure(state='disabled')
 
     def set_progress_count(self, count):
+        """sets the progress bar max value
+
+        this is needed when the user changes the number of seconds between
+        backup loops.
+        """
         self.progressbar_count = count
         self.progress['value'] = self.progressbar_count
 
     def increment_progress(self):
+        """decrements the progress bar for a visual indicator of when
+        the next backup loop will happen
+        """
         count = self.controller.app_settings.get_app_setting(
             'BACKUPFREQUENCY_SECONDS'
         )
@@ -334,27 +600,58 @@ class StartPage(ttk.Frame):
         self.progress['value'] = self.progressbar_count
 
     def update_backup_data(self):
+        """responsible for showing the user what is happening
+        or what happened during the backup thread.
+        
+        controls what is shows in the data_box
+        """
+        update_data_box = False
+        message = ''
         data = self.controller.message_queue.get()
-        message = f"Next backup check in {data['countdown']} seconds\n"
-        message += f"Total Backup Loops: {data['loops']}\n"
+        self.countdown['text'] = data['countdown']
+        self.loop['text'] = data['loops']
+        
+        # if we just backed up a save, update the flag and notes DB columns
+        if self.last_backup_processed:
+            self.controller.db.update_backup_options(
+                self.backup_flag_checkbox_var.get(),
+                self.backup_note_var.get(),
+                self.last_backup_processed['hash']
+            )
+            self.last_backup_processed = None
+            self.backup_flag_checkbox_var.set(False)
+            self.backup_note.delete(0,'end') 
 
+        # record the backup in progress details and display progress
         if data['processing'] == 1:
-            message += "\nNow backing up file: {}   ->  {}\n".format(
+            message += "Backup now in progress\n\n"
+            self.last_backup_processed = data['x4saves'][-1]
+            message += "Now backing up file: {}   ->  {}\n".format(
                 data['x4saves'][-1]['x4save'],
                 data['x4saves'][-1]['backup_filename']
             )
             message += "this may take a few minutes\n"
-            message += "    backing up and extracting info from backup file\n"
-
+            message += "    now backing up and extracting info from backup file\n\n"
+            
+            update_data_box = True
+            
+        # if we are not processing a backup, display the history of backups
+        # for this session
         if len(data['x4saves']) > 0 and data['processing'] == 0:
             message += "\nx4saves backed up:\n"
             for save in data['x4saves']:
-                message += "    {}  ->   {}\n".format(
+                message += "    {}  ->   {} in  {:0.4f} seconds\n".format(
                     save['x4save'],
-                    save['backup_filename']
+                    save['backup_filename'],
+                    save['backup_timespan']
                 )
+
+        if len(data['x4saves']) > self.backup_save_count and data['processing'] == 0:
+            self.backup_save_count = len(data['x4saves'])
+            update_data_box = True
             
-        self.backup_data.configure(state='normal')
-        self.backup_data.delete('1.0', tk.END)
-        self.backup_data.insert('1.0', message)
-        self.backup_data.configure(state='disabled')
+        if update_data_box:
+            self.backup_data.configure(state='normal')
+            self.backup_data.delete('1.0', tk.END)
+            self.backup_data.insert('1.0', message)
+            self.backup_data.configure(state='disabled')
