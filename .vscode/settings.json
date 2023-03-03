@@ -1,5 +1,7 @@
 {
     "pylint.path": [
         "${workspaceFolder}/src/modules"
-    ]
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true
 }
