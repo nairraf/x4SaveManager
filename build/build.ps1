@@ -51,6 +51,7 @@ function build() {
         -p ..\src\modules `
         -i ..\src\img\icon.ico `
         --add-binary "..\src\img;img" `
+        --add-data "..\src\*.json;." `
         ..\src\x4SaveManager.py
 }
 
