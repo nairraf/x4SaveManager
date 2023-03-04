@@ -1,14 +1,8 @@
 # x4SaveManager Overview
 
-x4SaveManager help to continuously backup your saves for X4 Foundations. 
-This way you can see all your save gaves organized by playthrough, and each
-playthrough is organized by date/time, so you can easily jump to a previous
-backup if/when needed.
+x4SaveManager help to continuously backup your saves for X4 Foundations. This way you can see all your save gaves organized by playthrough, and each playthrough is organized by date/time, so you can easily jump to a previous backup if/when needed.
 
-The initial version was just a powershell script, but overtime i wanted to add
-a bunch of new features, so a complete re-write was done in python, and tkinter
-was used to create the GUI which allows you to easily configure and control
-the x4SaveManager features.
+The initial version was just a powershell script, but overtime i wanted to add a bunch of new features, so a complete re-write was done in python, and tkinter was used to create the GUI which allows you to easily configure and control the x4SaveManager features.
 
 ## Features
 
@@ -49,39 +43,23 @@ the x4SaveManager features.
 
 ## Installation
 
-Installation is very simply. Download the latest release and extract it into
-any folder on your system, and simply double click on x4SaveManager.exe to 
-start the application
+Installation is very simply. Download the latest release and extract it into any folder on your system, and simply double click on x4SaveManager.exe to start the application
 
 ## Uninstallation
 
-Uninstallation is very easy, as you can simply delete the folder containing
-X4SaveManager. Please note that doing so will not delete any of the backed up
-saves, or any of your playthrough configuration. 
+Uninstallation is very easy, as you can simply delete the folder containing X4SaveManager. Please note that doing so will not delete any of the backed up saves, or any of your playthrough configuration. 
 
-If you want to fully delete everything, including all backups, 
-then you will need to delete the config file,
-database, and backup folder as well. By default these will be located in the
-%LOCALAPPDATA%\x4SaveManager\Release folder. In there you sill see the config.json,
-x4saveManager.db SQLite database, as well as the Backups folder.
+If you want to fully delete everything, including all backups, then you will need to delete the config file, database, and backup folder as well. By default these will be located in the %LOCALAPPDATA%\x4SaveManager\Release folder. In there you sill see the config.json, x4saveManager.db SQLite database, as well as the Backups folder.
 
 ## Usage
 
-Once x4SaveManager has been opened, you will need to create at least one playthrough.
-Click on File -> Create Playthrough, or in the main screen, just enter a new playthrough
-name and click on create. This will then allow you to add notes in the edit playthrough
-screen and save them.
+Once x4SaveManager has been opened, you will need to create at least one playthrough. Click on File -> Create Playthrough, or in the main screen, just enter a new playthrough name and click on create. This will then allow you to add notes in the edit playthrough screen and save them.
 
-Select the desired playthrough. Notice that in the bottom left in the 
-status bar that the currently selected playthrough is displayed. Clicking on
-the top Backup menu you can now start and stop the backup process. 
+Select the desired playthrough. Notice that in the bottom left in the status bar that the currently selected playthrough is displayed. Clicking on the top Backup menu you can now start and stop the backup process. 
 
-From there x4SaveManager will automatically search the default save X4 save location for new saves, and start backing them up. Simply play the game, and every time the game saves anything (autosave, quick save, or saving to one of the X4 slots), x4SaveManger will back it up, and associate the backup with the
-currently selected playthrough.
+From there x4SaveManager will automatically search the default save X4 save location for new saves, and start backing them up. Simply play the game, and every time the game saves anything (autosave, quick save, or saving to one of the X4 slots), x4SaveManger will back it up, and associate the backup with the currently selected playthrough.
 
-Clicking on the top backup menu and choosing stop will stop the backup loop
-and return you to the main application screen. Now that you have some backups,
-notice that they are listed in the right side of the screen. As you select different playthroughs, only the backups for the currently selected playthrough will be displayed. you can further interect with the backups by double clicking or right clicking.
+Clicking on the top backup menu and choosing stop will stop the backup loop and return you to the main application screen. Now that you have some backups, notice that they are listed in the right side of the screen. As you select different playthroughs, only the backups for the currently selected playthrough will be displayed. you can further interect with the backups by double clicking or right clicking.
 
 Notes and tips:
 * confirm all paths and backup intervals in the application settings (Edit -> Settings)
@@ -94,31 +72,10 @@ Notes and tips:
 
 ## How can I help?
 
-x4SaveManager is currently in beta. Please report all bugs and/or feature 
-requests in the Issues tracker.
+x4SaveManager is currently in beta. Please report all bugs and/or feature requests in the Issues tracker.
 
-## Development QuickStart
+If you would like to help out with any development, please read the CONTRIBUTING.md file
 
-VSCode was used with the pylint and python extensions. 
-A launch.json and settings.json is included in the .vscode directory
-so that you can easily debug the application properly, just choose the debug profile
-called 'Python: x4SaveManager' in VsCode, and you can press F5 to launch and debug.
-
-* make sure you have python 3 installed 
-  (3.11 was used for the initial development, also tested on 3.10)
-* 'git clone' this repository into a folder of your choosing
-* create a new python venv in the same folder that contains the above git clone:
-  * python -m venv .venv
-* activate the new python venv
-  * . .\.venv\Scripts\Activate.ps1
-* then restore the pip packages:
-  * 'pip install -r requirements.txt'
-
-###
-
-To build a release, just change directory into the build folder, and execute 
-build.ps1. The newly built executable and required dependencies will be in the 
-dist folder, under a folder called 'x4SaveManager'. 
 
 ## License
 
