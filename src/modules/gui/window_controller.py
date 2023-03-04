@@ -18,6 +18,7 @@ Example:
 import tkinter as tk
 import modules.app as appmod
 import modules.gui as guimod
+import json
 from os import path as ospath
 from queue import Queue
 
@@ -46,7 +47,15 @@ class WindowController(tk.Tk):
         self.selected_playthrough = None
         self.save_manager = appmod.SaveManager(self)
         self.playthrough_manager = appmod.PlaythroughManager(self)
-        
+        try:
+            with open(ospath.join(approot,'credits.json'), 'r') as f:
+                self.credits = json.load(f)
+
+            with open(ospath.join(approot,'version.json'), 'r') as f:
+                self.version = json.load(f)
+        except Exception as e:
+            self.show_error(e)
+
         guimod.GuiSettings.icon_path = ospath.join(
             ospath.join(approot, "img"), "icon.ico"
         )

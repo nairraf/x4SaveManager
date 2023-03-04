@@ -2,6 +2,20 @@
 
 Centralizes the window title and icon settings and includes that appropriate
 properties for the MessageWindow modal
+
+Usage:
+import tkinter as tk
+from tkinter import ttk
+from .new_page_root import NewPageRoot
+
+class PageName(NewPageRoot):
+    def __init__(self, caller, controller):
+        super().__init__(caller, controller)
+
+        self.set_title("PageName")
+        self.minsize(300,300)
+
+        self.show_window()
 """
 
 from __future__ import annotations

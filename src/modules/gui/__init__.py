@@ -9,3 +9,4 @@ from .playthrough_page import Playthrough
 from .settings_page import Settings
 from .start_page import StartPage
 from .status_bar import StatusBar
+from .about_page import About
