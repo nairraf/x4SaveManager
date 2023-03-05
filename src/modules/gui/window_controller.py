@@ -19,8 +19,10 @@ import tkinter as tk
 import modules.app as appmod
 import modules.gui as guimod
 import json
+import webbrowser
 from os import path as ospath
 from queue import Queue
+from urllib.request import urlopen
 
 class WindowController(tk.Tk):
     """This class creates the main application window and is responsible
@@ -90,6 +92,7 @@ class WindowController(tk.Tk):
             msg = "Could not detect default X4 save location.\nPlease set the path for the X4 Save location in settings."
             self.show_error(msg)
         self.bind_events()
+        self.check_update()
         self.startup()
 
     def set_window_title(self, text=""):
@@ -183,3 +186,22 @@ class WindowController(tk.Tk):
         if self.save_manager.backup_in_progress:
             self.save_manager.cancel_backup.set()
         self.destroy()
+
+    def check_update(self):
+        try:
+            version_url = "https://raw.githubusercontent.com/nairraf/x4SaveManager/main/src/version.json"
+            version_check = json.loads(urlopen(version_url).read())
+            latest_version = float(version_check['version'])
+            cur_version = float(self.version['version'])
+            question = """A new version of xSaveManager is available.
+Would you like to view the latest relases on the Github project page?"""
+            if cur_version < latest_version:
+                self.show_question(question)
+                if self.modalresult:
+                    self.open_github_releases()
+                    self.modalresult = 0
+        except Exception as e:
+            self.show_error("An Error occured while checking for updates")
+
+    def open_github_releases(self):
+        webbrowser.open_new_tab("https://github.com/nairraf/x4SaveManager/releases")
