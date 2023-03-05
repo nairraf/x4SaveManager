@@ -101,6 +101,10 @@ class Model():
                 else:
                     c.execute(insert_query,(name, notes))
                 return True
+            except sqlite3.IntegrityError as e:
+                if show_error:
+                    self.controller.show_error("""That playthrough name already exists.
+Please choose a different playthrough name, one that doesn't already exist.""")
             except sqlite3.Error as e:
                 if show_error:
                     self.controller.show_error(e)
@@ -117,6 +121,11 @@ class Model():
         DELETE FROM playthroughs 
         WHERE name = ?
         """
+        
+        # we don't delete the __DELETE__ playthrough
+        if name == "__DELETE__":
+            return False
+        
         with self.connection as c:
             try:
                 c.execute(query,(name,))
@@ -228,7 +237,7 @@ class Model():
         
         return False
     
-    def save_backup(self, playthrough_id, flag, notes, file_hash):
+    def save_backup(self, playthrough_id, flag, notes, delete, file_hash):
         """Used by the edit backup window. Saves the changes for
         the specific file_hash to the DB.
 
@@ -236,10 +245,11 @@ class Model():
             playthrough_id (int): the corresponding playthrough id
             flag (bool): flag this backup
             notes (str): the notes for this backup
+            delete (bool): the delete flag for this backup
             file_hash (str): the hash of the backup to update
         """
         query = """
-            UPDATE backups SET playthrough_id = ?, flag = ?, notes = ?
+            UPDATE backups SET playthrough_id = ?, flag = ?, notes = ?, "delete" = ?
             WHERE file_hash = ?
         """
         with self.connection as c:
@@ -248,6 +258,7 @@ class Model():
                     playthrough_id,
                     flag,
                     notes,
+                    delete,
                     file_hash,
                 ))
                 c.commit()
@@ -257,7 +268,31 @@ class Model():
 
         return False
     
-    
+    def set_backup_to_delete(self, hash):
+        """marks a backup for deletion
+
+        Args:
+            hash (str): the hash for the backup to mark for deletion
+        """
+        query = """
+            UPDATE backups SET "delete" = TRUE, playthrough_id = ?
+            WHERE file_hash = ?
+        """
+        # figure out the playthrough_id for __DELEDTED__ playthrough
+        dp = self.get_playthrough_by_name("__DELETE__")
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    dp['id'],
+                    hash
+                ))
+                c.commit()
+                return True
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return False
+
     def update_backup_options(self, flag, notes, hash):
         """updates just the flag and notes fields for a specific
         backup specified be the file hash
@@ -331,6 +366,7 @@ class Model():
                 , moded
                 , flag
                 , notes
+                , "delete"
             FROM backups
             WHERE file_hash = ?
         """
@@ -353,7 +389,8 @@ class Model():
                     'money': row[13],
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
-                    'notes': row[16]
+                    'notes': row[16],
+                    'delete': bool(row[17])
                 }
                 res = c.execute(query, (hash, )).fetchone()
                 return res
@@ -362,7 +399,63 @@ class Model():
         
         return None
     
-    def get_backups_by_id(self, playthrough_id):
+    def get_backups_to_delete(self):
+        """retreives all backups that have been marked for deletion
+        """
+        query = """
+            SELECT
+                playthrough_id
+                , x4_filename
+                , x4_save_time
+                , file_hash
+                , backup_time
+                , backup_filename
+                , backup_duration
+                , game_version
+                , original_game_version
+                , playtime
+                , x4_start_type
+                , character_name
+                , company_name
+                , money
+                , moded
+                , flag
+                , notes
+                , "delete"
+            FROM backups
+            WHERE "delete" = TRUE
+        """
+
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    'playthrough_id': row[0],
+                    'x4_filename': row[1],
+                    'x4_save_time': ctime(row[2]),
+                    'file_hash': row[3],
+                    'backup_time': ctime(row[4]),
+                    'backup_filename': row[5],
+                    'backup_duration': row[6],
+                    'game_version': row[7],
+                    'original_game_version': row[8],
+                    'playtime': row[9],
+                    'x4_start_type': row[10],
+                    'character_name': row[11],
+                    'company_name': row[12],
+                    'money': row[13],
+                    'moded': bool(row[14]),
+                    'flag': bool(row[15]),
+                    'notes': row[16],
+                    'delete': bool(row[17])
+                }
+                res = c.execute(query).fetchall()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+
+    def get_backups_by_id(self, playthrough_id, include_to_delete=False):
         """retreives all backups associated with a specific playthrough
         specified by it's id
         
@@ -388,9 +481,15 @@ class Model():
                 , moded
                 , flag
                 , notes
+                , "delete"
             FROM backups
             WHERE playthrough_id = ?
         """
+        if not include_to_delete:
+            query += " AND \"delete\" IS NOT TRUE"
+
+        query += " ORDER BY x4_save_time"
+
         with self.connection as c:
             try:
                 c.row_factory = lambda cursor, row: {
@@ -410,7 +509,8 @@ class Model():
                     'money': row[13],
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
-                    'notes': row[16]
+                    'notes': row[16],
+                    'delete': bool(row[17])
                 }
                 res = c.execute(query, (playthrough_id, )).fetchall()
                 return res
@@ -437,9 +537,10 @@ class Model():
             backup_duration = None,
             company_name = '',
             flag = False,
-            notes = ''
+            notes = '',
+            delete = False
     ):
-        """adds a new backups to the backups tabls
+        """adds a new backups to the backups table
         
         Args:
             playthrough_id (int): the ID of the playthrough for this backup
@@ -459,6 +560,7 @@ class Model():
             company_name (str): the characters company name
             flag (bool): the importance flag for this backup
             notes (str): the notes for this backup
+            delete (bool): sets the delete flag (default: false)
         """
         query = """
         INSERT INTO backups (
@@ -478,9 +580,10 @@ class Model():
             money,
             moded,
             flag,
-            notes
+            notes,
+            "delete"
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         try:
             with self.connection as c:
@@ -501,7 +604,8 @@ class Model():
                     money,
                     moded,
                     flag,
-                    notes
+                    notes,
+                    delete
                 ))
                 c.commit()
         except sqlite3.Error as e:
@@ -542,6 +646,30 @@ class Model():
                     c.execute(playthroughs_ddl)
                     c.execute(backups_ddl)
                     c.execute("PRAGMA user_version=1")
+                    c.commit()
+                self.get_db_version()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+        if self.version == 1:
+            backups_ddl = """
+                ALTER TABLE backups
+                ADD COLUMN "delete" BOOL;
+            """
+            query1 = """
+                UPDATE backups set "delete" = FALSE
+                WHERE "delete" IS NULL
+            """
+            query2 = """
+                INSERT INTO playthroughs (name, notes)
+                VALUES ('__DELETE__', 'All Playthroughs with the delete flag set are listed here')
+            """
+            try:
+                with self.connection as c:
+                    c.execute(backups_ddl)
+                    c.execute(query1)
+                    c.execute(query2)
+                    c.execute("PRAGMA user_version=2")
                     c.commit()
                 self.get_db_version()
             except sqlite3.Error as e:

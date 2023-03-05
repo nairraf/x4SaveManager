@@ -463,27 +463,31 @@ class StartPage(ttk.Frame):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
-        if self.controller.selected_playthrough:
+        if self.controller.delete_selected:
+            backups = self.controller.db.get_backups_to_delete()
+
+        if self.controller.selected_playthrough and not self.controller.delete_selected:
             backups = self.controller.db.get_backups_by_id(
                 self.controller.selected_playthrough['id']
             )
-            # delete all previous items in the tree
-            for item in self.tree.get_children():
-                self.tree.delete(item)
-            
-            # populate the tree with saves that match the selected playthrough
-            for save in backups:
-                self.tree.insert('', 'end', text=save['backup_filename'], values=(
-                    save['x4_save_time'],
-                    save['game_version'],
-                    "{:0.2f}".format(save['playtime']/60/60),
-                    save['character_name'],
-                    "${:,.0f}".format(save['money']),
-                    save['moded'],
-                    save['flag'],
-                    save['notes'].partition('\n')[0],
-                    save['file_hash']
-                ))
+        
+        # delete all previous items in the tree
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        # populate the tree with saves that match the selected playthrough
+        for save in backups:
+            self.tree.insert('', 'end', text=save['backup_filename'], values=(
+                save['x4_save_time'],
+                save['game_version'],
+                "{:0.2f}".format(save['playtime']/60/60),
+                save['character_name'],
+                "${:,.0f}".format(save['money']),
+                save['moded'],
+                save['flag'],
+                save['notes'].partition('\n')[0],
+                save['file_hash']
+            ))
 
     def create_playthrough(self):
         """Opens the create playthrough window
@@ -515,11 +519,18 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
-                self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
-                if hasattr(self.controller, 'statusbar'):
-                    self.controller.statusbar.set_playthrough(name)
-                self.set_notes(self.controller.selected_playthrough['notes'])
-                self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
+                if name == "__DELETE__":
+                    self.controller.delete_selected = True
+                    notes = self.controller.db.get_playthrough_by_name("__DELETE__")['notes']
+                else:
+                    self.controller.delete_selected = False
+                    self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
+                    if hasattr(self.controller, 'statusbar'):
+                        self.controller.statusbar.set_playthrough(name)
+                    notes = self.controller.selected_playthrough['notes']
+                    self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
+                
+                self.set_notes(notes)
                 self.populate_tree()
     
     def edit_playthrough(self, event):

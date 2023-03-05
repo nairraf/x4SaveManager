@@ -82,29 +82,7 @@ class MainMenu():
         )
 
     def delete_playthrough(self):
-        """Deletes the currently selected playthrough
-        """
-        if self.controller.selected_playthrough:
-            self.controller.show_question(
-                "Are you sure you want to delete Playthrough:\n{}".format(
-                    self.controller.selected_playthrough["name"]
-                )
-            )
-            
-            if self.controller.check_modal():
-                if self.controller.db.delete_playthrough_by_name(
-                    self.controller.selected_playthrough["name"]
-                ):
-                    self.controller.show_message(
-                        "Playthrough {} has been deleted".format(
-                            self.controller.selected_playthrough["name"]
-                        )
-                    )
-                    self.controller.selected_playthrough = None
-                    self.controller.startpage.refresh_playthroughs()
-                    self.controller.startpage.playthroughs.selection_clear(0)
-                    self.controller.statusbar.set_playthrough("None")
-                    self.controller.startpage.set_notes("")
+        self.controller.playthrough_manager.delete_playthrough()
     
     def open_settings(self):
         """Open the application settings window

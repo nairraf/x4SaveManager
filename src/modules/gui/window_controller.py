@@ -47,6 +47,7 @@ class WindowController(tk.Tk):
         self.app_settings = appmod.AppSettings(self)
         self.db = appmod.Model(self, self.app_settings.get_app_setting("DBPATH"))
         self.selected_playthrough = None
+        self.delete_selected = False
         self.save_manager = appmod.SaveManager(self)
         self.playthrough_manager = appmod.PlaythroughManager(self)
         try:

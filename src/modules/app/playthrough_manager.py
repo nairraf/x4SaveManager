@@ -54,3 +54,43 @@ class PlaythroughManager():
             except Exception as e:
                 self.controller.show_error(e)
 
+    def delete_playthrough(self):
+        """Deletes the currently selected playthrough
+        """
+        if self.controller.selected_playthrough:
+            self.controller.show_question(
+                "Are you sure you want to delete Playthrough:\n{}".format(
+                    self.controller.selected_playthrough["name"]
+                )
+            )
+            
+            if not self.controller.check_modal():
+                return
+
+            backups = self.controller.db.get_backups_by_id(
+                self.controller.selected_playthrough["id"]
+            )
+
+            for backup in backups:
+                self.controller.db.set_backup_to_delete(
+                    backup["file_hash"]
+                )
+
+            if self.controller.db.delete_playthrough_by_name(
+                self.controller.selected_playthrough["name"]
+            ):
+                self.controller.show_message(
+                    "Playthrough {} has been marked for deletion".format(
+                        self.controller.selected_playthrough["name"]
+                    )
+                )
+                self.controller.selected_playthrough = None
+                self.controller.startpage.refresh_playthroughs()
+                self.controller.startpage.playthroughs.selection_clear(0)
+                self.controller.statusbar.set_playthrough("None")
+                self.controller.top_menu.menu_backup.entryconfigure(
+                    'Start Backup',
+                    state='disabled'
+                )
+                self.controller.startpage.set_notes("")
+
