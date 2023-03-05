@@ -26,14 +26,16 @@ class Backup(NewPageRoot):
             self.selected_backup['playthrough_id']
         )
         self.flag_var = tk.BooleanVar()
+        self.delete_var = tk.BooleanVar()
         self.status_label_var = tk.StringVar()
         self.bfn_var = tk.StringVar()
         self.flag_var.set(self.selected_backup['flag'])
+        self.delete_var.set(self.selected_backup['delete'])
         self.minsize(600,600)
         
         self.frame = ttk.Frame(self)
         self.frame.columnconfigure((2,4), weight=1)
-        self.frame.rowconfigure(7, weight=1)
+        self.frame.rowconfigure(8, weight=1)
 
         self.frame.grid(
            column=0,
@@ -214,6 +216,27 @@ class Backup(NewPageRoot):
             sticky=(tk.W, tk.E)
         )
 
+        # delete
+        tk.Label(
+            self.frame,
+            text="Delete:"
+        ).grid(
+            column=3,
+            row=7,
+            sticky=tk.E
+        )
+        self.flag = ttk.Checkbutton(
+            self.frame,
+            variable=self.delete_var,
+            text='',
+            command=self.flag_change
+        )
+        self.flag.grid(
+            column=4,
+            row=7,
+            sticky=(tk.W, tk.E)
+        )
+
         # game version
         tk.Label(
             self.frame,
@@ -342,7 +365,7 @@ class Backup(NewPageRoot):
         self.notes_frame.grid(
             column=0,
             columnspan=5,
-            row=7,
+            row=8,
             sticky=(tk.W, tk.N, tk.E, tk.S),
             ipadx=5,
             ipady=5,
@@ -394,7 +417,7 @@ class Backup(NewPageRoot):
         bottom_frame.grid(
             column=0,
             columnspan=5,
-            row=8,
+            row=9,
             sticky=(tk.W, tk.E)
         )
         bottom_frame.grid_columnconfigure(2, weight=1)
@@ -451,7 +474,7 @@ class Backup(NewPageRoot):
         self.status_label_var.set('')
 
     def flag_change(self):
-        """Callback for the flag checkbox on change
+        """Callback for the flag and delete checkboxes on change
         """
         self.check_changes()
 
@@ -460,7 +483,16 @@ class Backup(NewPageRoot):
         
         Enables saving changes, persisting them to DB
         """
-        pid = self.controller.db.get_playthrough_by_name(self.pid_dropdown.get())['id']
+        selected_playthrough = self.controller.db.get_playthrough_by_name(self.pid_dropdown.get())
+        pid = selected_playthrough['id']
+        if (selected_playthrough['name'] == "__DELETE__" and
+            self.delete_var.get() == False
+        ):
+            self.show_error("""Cannot assign backup to playthrough '__DELETE__'.
+All backups assigned to __DELETE__ must have the Delete checkbox selected.
+Please choose a playthrough that isn't '__DELETE__'""")
+            return
+        
         if self.selected_backup['playthrough_id'] != pid:
             # playthrough has changed, so update the playthrough properly first
             self.controller.playthrough_manager.move_backups_to_index(
@@ -480,7 +512,8 @@ class Backup(NewPageRoot):
             playthrough_id=pid,
             flag=self.flag_var.get(),
             file_hash=self.selected_backup['file_hash'],
-            notes=self.text_editor.get('1.0', 'end')
+            notes=self.text_editor.get('1.0', 'end'),
+            delete=self.delete_var.get()
         ):
             self.controller.startpage.populate_tree()
             self.status_label_var.set('Saved Successfully')

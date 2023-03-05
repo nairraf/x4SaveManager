@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import Menu
 from .settings_page import Settings
 from .playthrough_page import Playthrough
+from .about_page import About
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -22,6 +23,7 @@ class MainMenu():
         """
         self.controller = controller
         self.settings = None
+        self.about = None
         self.add_playthrough = None
         #create our top level menu's
         menubar = Menu(controller)
@@ -29,9 +31,12 @@ class MainMenu():
         self.menu_file = Menu(menubar)
         self.menu_edit = Menu(menubar)
         self.menu_backup = Menu(menubar)
+        self.menu_help = Menu(menubar)
+
         menubar.add_cascade(menu=self.menu_file, label='File')
         menubar.add_cascade(menu=self.menu_edit, label='Edit')
         menubar.add_cascade(menu=self.menu_backup, label='Backup')
+        menubar.add_cascade(menu=self.menu_help, label='Help')
 
         # file menu
         self.menu_file.add_command(
@@ -65,30 +70,19 @@ class MainMenu():
             state='disabled'
         )
 
+        # help menu
+        self.menu_help.add_command(
+            label='Check Update',
+            command=self.check_update
+        )
+        self.menu_help.add_separator()
+        self.menu_help.add_command(
+            label='About',
+            command=self.open_about
+        )
+
     def delete_playthrough(self):
-        """Deletes the currently selected playthrough
-        """
-        if self.controller.selected_playthrough:
-            self.controller.show_question(
-                "Are you sure you want to delete Playthrough:\n{}".format(
-                    self.controller.selected_playthrough["name"]
-                )
-            )
-            
-            if self.controller.check_modal():
-                if self.controller.db.delete_playthrough_by_name(
-                    self.controller.selected_playthrough["name"]
-                ):
-                    self.controller.show_message(
-                        "Playthrough {} has been deleted".format(
-                            self.controller.selected_playthrough["name"]
-                        )
-                    )
-                    self.controller.selected_playthrough = None
-                    self.controller.startpage.refresh_playthroughs()
-                    self.controller.startpage.playthroughs.selection_clear(0)
-                    self.controller.statusbar.set_playthrough("None")
-                    self.controller.startpage.set_notes("")
+        self.controller.playthrough_manager.delete_playthrough()
     
     def open_settings(self):
         """Open the application settings window
@@ -100,10 +94,30 @@ class MainMenu():
             self.settings.focus()
 
     def settings_closed(self, *args):
-        """to track if the settings window is closed or not
-        this way we don't open multiple settings window
+        """callback when the settings window closes
+        we track if the window is open or not
+        so we will only one window at a time
         """
         self.settings = None
+
+    def open_about(self):
+        """Opens the about window
+        """
+        if self.about == None:
+            self.about = About(self, self.controller)
+            self.about.bind('<Destroy>', self.about_closed)
+        else:
+            self.about.focus()
+
+    def about_closed(self, *args):
+        """callback when the about window closes
+        we track if the window is open or not
+        so we will only one window at a time
+        """
+        self.about = None
+
+    def check_update(self):
+        self.controller.check_update()
 
     def open_add_playthrough(self):
         """Open the add playthrough window
