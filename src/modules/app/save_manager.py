@@ -108,10 +108,12 @@ class SaveManager():
 
                 sleep(1)
                 if self.cancel_backup.is_set():
+                    self.controller.event_generate("<<RefreshBackupTreeview>>")
                     break
 
             # make sure we aren't canceled before continuing
             if self.cancel_backup.is_set():
+                self.controller.event_generate("<<RefreshBackupTreeview>>")
                 break
             
             # check to see if we have any x4saves that haven't been backed up

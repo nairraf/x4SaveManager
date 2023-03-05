@@ -170,6 +170,10 @@ class WindowController(tk.Tk):
             "<<NewQueueData>>",
             lambda e: self.startpage.update_backup_data()
         )
+        self.bind(
+            "<<RefreshBackupTreeview>>",
+            lambda e: self.startpage.populate_tree()
+        )
         self.protocol("WM_DELETE_WINDOW", self.close)
 
     def close(self):
