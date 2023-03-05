@@ -198,10 +198,10 @@ Would you like to view the latest relases on the Github project page?"""
             if cur_version < latest_version:
                 self.show_question(question)
                 if self.modalresult:
-                    self.open_github_releases()
+                    self.open_url("https://github.com/nairraf/x4SaveManager/releases")
                     self.modalresult = 0
         except Exception as e:
             self.show_error("An Error occured while checking for updates")
 
-    def open_github_releases(self):
-        webbrowser.open_new_tab("https://github.com/nairraf/x4SaveManager/releases")
+    def open_url(self, url):
+        webbrowser.open_new_tab(url)

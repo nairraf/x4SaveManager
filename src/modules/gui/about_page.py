@@ -42,7 +42,7 @@ class About(NewPageRoot):
             pady=(10,0)
         )
         self.about_frame.grid_columnconfigure(0, weight=1)
-        self.about_frame.grid_rowconfigure(3, weight=1)
+        self.about_frame.grid_rowconfigure(4, weight=1)
 
         ttk.Label(
             self.about_frame,
@@ -77,8 +77,25 @@ class About(NewPageRoot):
         ).grid(
             column=0,
             row=2,
+            sticky=(tk.W, tk.E)
+        )
+
+        project_page = tk.Label(
+            self.about_frame,
+            text="Open Github Project Page",
+            anchor='center',
+            fg="blue",
+            cursor="hand2"
+        )
+        project_page.grid(
+            column=0,
+            row=3,
             sticky=(tk.W, tk.E),
             pady=(0,10)
+        )
+        project_page.bind(
+            "<Button-1>",
+            lambda e: self.controller.open_url("https://github.com/nairraf/x4SaveManager")
         )
 
         # credits frame
@@ -88,7 +105,7 @@ class About(NewPageRoot):
         )
         self.credits_frame.grid(
             column=0,
-            row=3,
+            row=4,
             ipadx=5,
             ipady=5,
             sticky=(tk.W, tk.N, tk.E, tk.S)
