@@ -117,7 +117,7 @@ class MainMenu():
         self.about = None
 
     def check_update(self):
-        self.controller.check_update()
+        self.controller.check_update(feedback=True)
 
     def open_add_playthrough(self):
         """Open the add playthrough window

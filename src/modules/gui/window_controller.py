@@ -188,7 +188,7 @@ class WindowController(tk.Tk):
             self.save_manager.cancel_backup.set()
         self.destroy()
 
-    def check_update(self):
+    def check_update(self, feedback=False):
         try:
             version_url = "https://raw.githubusercontent.com/nairraf/x4SaveManager/main/src/version.json"
             version_check = json.loads(urlopen(version_url).read())
@@ -201,6 +201,9 @@ Would you like to view the latest relases on the Github project page?"""
                 if self.modalresult:
                     self.open_url("https://github.com/nairraf/x4SaveManager/releases")
                     self.modalresult = 0
+            elif cur_version == latest_version:
+                if feedback:
+                    self.show_message("You are on the latest version")
         except Exception as e:
             self.show_error("An Error occured while checking for updates")
 
