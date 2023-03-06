@@ -123,7 +123,11 @@ class SaveManager():
             # third - if the hash/file hasn't been backed up, back it up
 
             for file in os.scandir(x4_save_path):
-                if not file.is_file() or 'xml.gz' not in file.name:
+                if (
+                    not file.is_file() or 
+                    'xml.gz' not in file.name or
+                    'temp_save' in file.name
+                ):
                     continue
                 
                 sha256 = hashlib.sha256()
@@ -153,7 +157,7 @@ class SaveManager():
                     'backup_filename': backup_filename,
                     'hash': hash
                 })
-                x4save_time = os.path.getctime(file.path)
+                x4save_time = os.path.getmtime(file.path)
                 try:
                     data['processing'] = 1
                     message_queue.put(data)
