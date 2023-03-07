@@ -42,6 +42,7 @@ class StartPage(ttk.Frame):
             'BACKUPFREQUENCY_SECONDS'
         )
         self.last_backup_processed = None
+        self.sort_tree_dictionary = {}
         self.build_page()
         self.refresh_playthroughs()
 
@@ -382,7 +383,12 @@ class StartPage(ttk.Frame):
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
         self.tree.column('SaveTime', width=150, anchor='w')
-        self.tree.heading('SaveTime', text='Save Time')
+        self.tree.heading(
+            'SaveTime',
+            text='Save Time',
+            command=lambda: self.sort_tree('x4_save_time')
+        )
+
         self.tree.column('GameVersion', width=100, anchor='w')
         self.tree.heading('GameVersion', text='Game Version')
         self.tree.column('Playtime', width=80, anchor='e')
@@ -459,7 +465,7 @@ class StartPage(ttk.Frame):
         self.controller.playthrough_manager.move_backups_to_index(entries, playthrough_id)
         self.populate_tree()
 
-    def populate_tree(self):
+    def populate_tree(self, sort_column='x4_save_time', sort_direction='asc'):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
@@ -468,7 +474,9 @@ class StartPage(ttk.Frame):
 
         if self.controller.selected_playthrough and not self.controller.delete_selected:
             backups = self.controller.db.get_backups_by_id(
-                self.controller.selected_playthrough['id']
+                self.controller.selected_playthrough['id'],
+                sort_column=sort_column,
+                sort_direction=sort_direction
             )
         
         # delete all previous items in the tree
@@ -488,6 +496,19 @@ class StartPage(ttk.Frame):
                 save['notes'].partition('\n')[0],
                 save['file_hash']
             ))
+    def sort_tree(self, column):
+        if column not in self.sort_tree_dictionary:
+            self.sort_tree_dictionary[column] = 'asc'
+
+        if self.sort_tree_dictionary[column] == 'asc':
+            self.sort_tree_dictionary[column] = 'desc'
+        else:
+            self.sort_tree_dictionary[column] = 'asc'
+                
+        self.populate_tree(
+            column,
+            self.sort_tree_dictionary[column]
+        )
 
     def create_playthrough(self):
         """Opens the create playthrough window
