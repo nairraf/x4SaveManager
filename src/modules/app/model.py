@@ -399,7 +399,11 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return None
     
-    def get_backups_to_delete(self):
+    def get_backups_to_delete(
+            self,
+            sort_column='x4_save_time',
+            sort_direction='asc'
+        ):
         """retreives all backups that have been marked for deletion
         """
         query = """
@@ -424,7 +428,11 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                 , "delete"
             FROM backups
             WHERE "delete" = TRUE
-        """
+            ORDER BY {} {}
+        """.format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -499,7 +507,12 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         if not include_to_delete:
             query += " AND \"delete\" IS NOT TRUE"
 
-        query += " ORDER BY ? desc".format(sort_direction)
+        # SQL Parameters can't be used in the order by
+        # they can only be used to replace values
+        query += " ORDER BY {} {}".format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -524,8 +537,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                     'delete': bool(row[17])
                 }
                 res = c.execute(query, (
-                    playthrough_id,
-                    sort_column
+                    playthrough_id, 
                 )).fetchall()
                 return res
             except sqlite3.Error as e:

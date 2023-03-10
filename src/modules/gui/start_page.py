@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import tkinter as tk
+import os
 from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
@@ -382,17 +383,31 @@ class StartPage(ttk.Frame):
             row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+
+        self.up_arrow = tk.PhotoImage(
+            file=os.path.join(self.controller.approot, 'img', 'up_arrow.png')
+        )
+
+        self.down_arrow = tk.PhotoImage(
+            file=os.path.join(self.controller.approot, 'img', 'down_arrow.png')
+        )
+
         self.tree.column('SaveTime', width=150, anchor='w')
         self.tree.heading(
             'SaveTime',
             text='Save Time',
-            command=lambda: self.sort_tree('x4_save_time')
+            command=lambda: self.sort_tree('SaveTime', 'x4_save_time')
         )
 
         self.tree.column('GameVersion', width=100, anchor='w')
         self.tree.heading('GameVersion', text='Game Version')
         self.tree.column('Playtime', width=80, anchor='e')
-        self.tree.heading('Playtime', text='Hours')
+
+        self.tree.heading(
+            'Playtime',
+            text='Hours',
+            command=lambda: self.sort_tree('Playtime', 'playtime')
+        )
         self.tree.column('Character', width=150, anchor='center')
         self.tree.heading('Character', text='Character')
         self.tree.column('Money', width=100, anchor='e')
@@ -442,7 +457,8 @@ class StartPage(ttk.Frame):
         in the treeview
         """
         index = self.tree.selection()
-        self.edit_save(index)
+        if index:
+            self.edit_save(index)
         
     def edit_save(self, indexes):
         """Open the edit backup window
@@ -469,8 +485,15 @@ class StartPage(ttk.Frame):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
+
+        if not self.controller.selected_playthrough:
+            return
+        
         if self.controller.delete_selected:
-            backups = self.controller.db.get_backups_to_delete()
+            backups = self.controller.db.get_backups_to_delete(
+                sort_column=sort_column,
+                sort_direction=sort_direction
+            )
 
         if self.controller.selected_playthrough and not self.controller.delete_selected:
             backups = self.controller.db.get_backups_by_id(
@@ -496,14 +519,24 @@ class StartPage(ttk.Frame):
                 save['notes'].partition('\n')[0],
                 save['file_hash']
             ))
-    def sort_tree(self, column):
+    
+    def sort_tree(self, heading, column):
+        self.clear_heading_images()
         if column not in self.sort_tree_dictionary:
             self.sort_tree_dictionary[column] = 'asc'
 
         if self.sort_tree_dictionary[column] == 'asc':
             self.sort_tree_dictionary[column] = 'desc'
+            self.tree.heading(
+                heading,
+                image=self.down_arrow
+            )
         else:
             self.sort_tree_dictionary[column] = 'asc'
+            self.tree.heading(
+                heading,
+                image=self.up_arrow
+            )
                 
         self.populate_tree(
             column,
@@ -551,8 +584,19 @@ class StartPage(ttk.Frame):
                     notes = self.controller.selected_playthrough['notes']
                     self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
                 
+                self.clear_heading_images()
                 self.set_notes(notes)
                 self.populate_tree()
+
+    def clear_heading_images(self):
+        self.tree.heading(
+            'SaveTime',
+            image=''
+        )
+        self.tree.heading(
+            'Playtime',
+            image=''
+        )
     
     def edit_playthrough(self, event):
         """opens the edit playthrough window on double-click
