@@ -122,8 +122,8 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         WHERE name = ?
         """
         
-        # we don't delete the __DELETE__ playthrough
-        if name == "__DELETE__":
+        # we don't delete the __RECYCLE BIN__ playthrough
+        if name == "__RECYCLE BIN__":
             return False
         
         with self.connection as c:
@@ -204,7 +204,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         """
         query = """
             SELECT name FROM playthroughs
-            ORDER BY CASE WHEN name = '__DELETE__' THEN 1 else 2 END, name COLLATE NOCASE ASC
+            ORDER BY CASE WHEN name = '__RECYCLE BIN__' THEN 1 else 2 END, name COLLATE NOCASE ASC
         """
         with self.connection as c:
             try:
@@ -279,7 +279,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
             WHERE file_hash = ?
         """
         # figure out the playthrough_id for __DELEDTED__ playthrough
-        dp = self.get_playthrough_by_name("__DELETE__")
+        dp = self.get_playthrough_by_name("__RECYCLE BIN__")
         with self.connection as c:
             try:
                 c.execute(query, (
@@ -688,7 +688,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
             """
             query2 = """
                 INSERT INTO playthroughs (name, notes)
-                VALUES ('__DELETE__', 'All Playthroughs with the delete flag set are listed here')
+                VALUES ('__RECYCLE BIN__', 'All Playthroughs with the delete flag set are listed here')
             """
             try:
                 with self.connection as c:

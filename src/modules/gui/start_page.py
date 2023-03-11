@@ -573,9 +573,9 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
-                if name == "__DELETE__":
+                if name == "__RECYCLE BIN__":
                     self.controller.delete_selected = True
-                    notes = self.controller.db.get_playthrough_by_name("__DELETE__")['notes']
+                    notes = self.controller.db.get_playthrough_by_name("__RECYCLE BIN__")['notes']
                 else:
                     self.controller.delete_selected = False
                     self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
@@ -606,6 +606,9 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
+                if name == "__RECYCLE BIN__":
+                    self.controller.show_error("Cannot edit the recycle bin")
+                    return
                 id = self.controller.db.get_playthrough_by_name(name)['id']
                 Playthrough(self, self.controller, name=name, id=id)
 
