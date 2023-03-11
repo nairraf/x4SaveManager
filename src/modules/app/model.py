@@ -399,7 +399,11 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return None
     
-    def get_backups_to_delete(self):
+    def get_backups_to_delete(
+            self,
+            sort_column='x4_save_time',
+            sort_direction='asc'
+        ):
         """retreives all backups that have been marked for deletion
         """
         query = """
@@ -424,7 +428,11 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                 , "delete"
             FROM backups
             WHERE "delete" = TRUE
-        """
+            ORDER BY {} {}
+        """.format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -455,12 +463,22 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return None
 
-    def get_backups_by_id(self, playthrough_id, include_to_delete=False):
+    def get_backups_by_id(
+            self,
+            playthrough_id,
+            include_to_delete=False,
+            sort_column='x4_save_time',
+            sort_direction='asc'
+        ):
         """retreives all backups associated with a specific playthrough
         specified by it's id
         
         Args:
             playthrough_id (str): the playthrough_id
+            include_to_delete (bool): default False. Includes the items marked
+                                      for deletion
+            sort_column (str): which column to sort by (default is x4_save_time)
+            sort_direction (str): Default Asc. Asc/Desc
         """
         query = """
             SELECT
@@ -485,10 +503,16 @@ Please choose a different playthrough name, one that doesn't already exist.""")
             FROM backups
             WHERE playthrough_id = ?
         """
+
         if not include_to_delete:
             query += " AND \"delete\" IS NOT TRUE"
 
-        query += " ORDER BY x4_save_time"
+        # SQL Parameters can't be used in the order by
+        # they can only be used to replace values
+        query += " ORDER BY {} {}".format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -512,7 +536,9 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                     'notes': row[16],
                     'delete': bool(row[17])
                 }
-                res = c.execute(query, (playthrough_id, )).fetchall()
+                res = c.execute(query, (
+                    playthrough_id, 
+                )).fetchall()
                 return res
             except sqlite3.Error as e:
                 self.controller.show_error(e)
