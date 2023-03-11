@@ -204,7 +204,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         """
         query = """
             SELECT name FROM playthroughs
-            ORDER BY name
+            ORDER BY CASE WHEN name = '__DELETE__' THEN 1 else 2 END, name COLLATE NOCASE ASC
         """
         with self.connection as c:
             try:
