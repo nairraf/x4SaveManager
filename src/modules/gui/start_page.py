@@ -40,7 +40,8 @@ class StartPage(ttk.Frame):
         self.backup_flag_checkbox_var = tk.BooleanVar()
         self.modalresult = None
         self.progressbar_count = self.controller.app_settings.get_app_setting(
-            'BACKUPFREQUENCY_SECONDS'
+            'BACKUPFREQUENCY_SECONDS',
+            category="BACKUP"
         )
         self.last_backup_processed = None
         self.sort_tree_dictionary = {}
@@ -71,7 +72,8 @@ class StartPage(ttk.Frame):
             orient="horizontal",
             mode="determinate",
             maximum=self.controller.app_settings.get_app_setting(
-                'BACKUPFREQUENCY_SECONDS'
+                'BACKUPFREQUENCY_SECONDS',
+                category="BACKUP"
             )
         )
         self.progress.grid(
@@ -669,7 +671,8 @@ class StartPage(ttk.Frame):
         the next backup loop will happen
         """
         count = self.controller.app_settings.get_app_setting(
-            'BACKUPFREQUENCY_SECONDS'
+            'BACKUPFREQUENCY_SECONDS',
+            category="BACKUP"
         )
         if self.progressbar_count > 0:
             self.progressbar_count -= 1

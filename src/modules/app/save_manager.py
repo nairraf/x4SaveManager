@@ -77,7 +77,7 @@ class SaveManager():
 
         backup_path = settings["APP"]["BACKUPPATH"]
         x4_save_path = settings["APP"]["X4SAVEPATH"]
-        save_seconds = settings["APP"]["BACKUPFREQUENCY_SECONDS"]
+        save_seconds = settings["BACKUP"]["BACKUPFREQUENCY_SECONDS"]
         temp_dir = os.path.join(
             backup_path, 'temp'
         )

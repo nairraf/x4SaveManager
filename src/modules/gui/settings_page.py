@@ -27,12 +27,17 @@ class Settings(NewPageRoot):
         self.status_text = tk.StringVar()
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
+        self.old_backup_days_text = tk.StringVar()
         self.x4save_path_text = tk.StringVar()
         self.backup_frequency_text = tk.StringVar()
         self.check_int_wrapper = (
             self.controller.register(Validate.integer_input),
             '%P'
         )
+        self.backup_pruning_var = tk.BooleanVar()
+        self.delete_quicksaves_var = tk.BooleanVar()
+        self.delete_autosaves_var = tk.BooleanVar()
+        self.delete_saves_var = tk.BooleanVar()
 
         self.set_title("Settings")
         
@@ -122,30 +127,144 @@ class Settings(NewPageRoot):
             padx=2
         )
 
-        ttk.Label(app_page, text='Backup Frequency (sec):').grid(
+        # database settings page
+        backup_page = ttk.Frame(nb, padding=5)
+        backup_page.grid_columnconfigure(1, weight=1)
+
+        ttk.Label(backup_page, text='Backup Frequency (sec):').grid(
             column=0,
-            row=3,
+            row=0,
             sticky=tk.W
         )
         self.backup_frequency = tk.Entry(
-            app_page,
+            backup_page,
             textvariable=self.backup_frequency_text,
             validate='key',
             validatecommand=self.check_int_wrapper
         )
         self.backup_frequency.grid(
             column=1,
+            row=0,
+            sticky=(tk.W, tk.E)
+        )
+
+        pruning_frame = tk.LabelFrame(
+            backup_page,
+            text="Backup Pruning/Deletion settings"
+        )
+        pruning_frame.grid(
+            column=0,
+            columnspan=2,
+            row=1,
+            sticky=(tk.W, tk.N, tk.E, tk.S),
+            pady=10,
+        )
+
+        tk.Label(pruning_frame, text="Old Backups (days): ").grid(
+            column=0,
+            row=0,
+            pady=5,
+            sticky=tk.E
+        )
+        self.old_backup_days = tk.Entry(
+            pruning_frame,
+            textvariable=self.old_backup_days_text,
+            validate='key',
+            validatecommand=self.check_int_wrapper
+        )
+        self.old_backup_days.grid(
+            column=1,
+            row=0,
+            sticky=(tk.W, tk.E)
+        )
+        
+        tk.Label(
+            pruning_frame,
+            text="Enable Auto-Pruning\non Application Start:"
+        ).grid(
+            column=0,
+            row=1,
+            pady=5,
+            sticky=tk.E
+        )
+        self.backup_pruning = ttk.Checkbutton(
+            pruning_frame,
+            variable=self.backup_pruning_var,
+            text='',
+            command=self.flag_change
+        )
+        self.backup_pruning.grid(
+            column=1,
+            row=1,
+            sticky=(tk.W, tk.E)
+        )
+
+        tk.Label(
+            pruning_frame,
+            text="Delete Quick Save Backups:"
+        ).grid(
+            column=0,
+            row=2,
+            pady=5,
+            sticky=tk.E
+        )
+        self.delete_quicksaves = ttk.Checkbutton(
+            pruning_frame,
+            variable=self.delete_quicksaves_var,
+            text='',
+            command=self.flag_change
+        )
+        self.delete_quicksaves.grid(
+            column=1,
+            row=2,
+            sticky=(tk.W, tk.E)
+        )
+
+        tk.Label(
+            pruning_frame,
+            text="Delete Auto Save Backups:"
+        ).grid(
+            column=0,
+            row=3,
+            pady=5,
+            sticky=tk.E
+        )
+        self.delete_autosaves = ttk.Checkbutton(
+            pruning_frame,
+            variable=self.delete_autosaves_var,
+            text='',
+            command=self.flag_change
+        )
+        self.delete_autosaves.grid(
+            column=1,
             row=3,
             sticky=(tk.W, tk.E)
         )
 
-        # database page
-        db_page = ttk.Frame(nb, padding=5)
-        db_page.grid_columnconfigure(1, weight=1)
+        tk.Label(
+            pruning_frame,
+            text="Delete Normal Save Backups:"
+        ).grid(
+            column=0,
+            row=4,
+            pady=5,
+            sticky=tk.E
+        )
+        self.delete_saves = ttk.Checkbutton(
+            pruning_frame,
+            variable=self.delete_saves_var,
+            text='',
+            command=self.flag_change
+        )
+        self.delete_saves.grid(
+            column=1,
+            row=4,
+            sticky=(tk.W, tk.E)
+        )
 
         # add the pages to our notebook
         nb.add(app_page, text="App Settings")
-        nb.add(db_page, text="Database Settings")
+        nb.add(backup_page, text="Backup Settings")
         nb.grid(
             column=0,
             columnspan=4,
@@ -200,6 +319,7 @@ class Settings(NewPageRoot):
         self.backup_path_text.trace_add('write', self.check_changes)
         self.x4save_path_text.trace_add('write', self.check_changes)
         self.backup_frequency_text.trace_add('write', self.check_changes)
+        self.old_backup_days_text.trace_add('write', self.check_changes)
         self.protocol("WM_DELETE_WINDOW", self.close)
         
         self.show_window()
@@ -218,8 +338,41 @@ class Settings(NewPageRoot):
         self.x4save_path_text.set(
             self.controller.app_settings.get_app_setting('X4SAVEPATH')
         )
+        self.old_backup_days_text.set(
+            self.controller.app_settings.get_app_setting(
+                'DELETE_OLD_DAYS',
+                category='BACKUP'
+            )
+        )
         self.backup_frequency_text.set(
-            self.controller.app_settings.get_app_setting('BACKUPFREQUENCY_SECONDS')
+            self.controller.app_settings.get_app_setting(
+                'BACKUPFREQUENCY_SECONDS',
+                category="BACKUP"
+            )
+        )
+        self.delete_quicksaves_var.set(
+            self.controller.app_settings.get_app_setting(
+                "DELETE_QUICKSAVES",
+                category="BACKUP"
+            )
+        )
+        self.delete_autosaves_var.set(
+            self.controller.app_settings.get_app_setting(
+                "DELETE_AUTOSAVES",
+                category="BACKUP"
+            )
+        )
+        self.delete_saves_var.set(
+            self.controller.app_settings.get_app_setting(
+                "DELETE_SAVES",
+                category="BACKUP"
+            )
+        )
+        self.backup_pruning_var.set(
+            self.controller.app_settings.get_app_setting(
+                "BACKUP_PRUNING",
+                category="BACKUP"
+            )
         )
 
     def check_changes(self, *args, clear_status=True):
@@ -256,19 +409,70 @@ class Settings(NewPageRoot):
 
         if ( len(self.backup_frequency.get()) > 0 
              and not int(self.backup_frequency.get()) == 
-             self.controller.app_settings.get_app_setting('BACKUPFREQUENCY_SECONDS')
+             self.controller.app_settings.get_app_setting(
+                'BACKUPFREQUENCY_SECONDS',
+                category="BACKUP"
+             )
            ):
             data_changed = True
             self.backup_frequency.config(background="Yellow")
         else:
             self.backup_frequency.config(background="White")
 
+        if ( len(self.old_backup_days.get()) > 0 
+             and not int(self.old_backup_days.get()) == 
+             self.controller.app_settings.get_app_setting(
+                'DELETE_OLD_DAYS',
+                category="BACKUP"
+             )
+           ):
+            data_changed = True
+            self.old_backup_days.config(background="Yellow")
+        else:
+            self.old_backup_days.config(background="White")
+
+        if (
+            self.controller.app_settings.get_app_setting(
+                "DELETE_QUICKSAVES",
+                category="BACKUP"
+            ) != self.delete_quicksaves_var.get()
+        ):
+            data_changed = True
+
+        if (
+            self.controller.app_settings.get_app_setting(
+                "DELETE_AUTOSAVES",
+                category="BACKUP"
+            ) != self.delete_autosaves_var.get()
+        ):
+            data_changed = True
+
+        if (
+            self.controller.app_settings.get_app_setting(
+                "DELETE_SAVES",
+                category="BACKUP"
+            ) != self.delete_saves_var.get()
+        ):
+            data_changed = True
+        
+        if (
+            self.controller.app_settings.get_app_setting(
+                "BACKUP_PRUNING",
+                category="BACKUP"
+            ) != self.backup_pruning_var.get()
+        ):
+            data_changed = True
+
         if data_changed:
             self.save.state(['!disabled'])
         else:
             self.save.state(['disabled'])
             
-
+    def flag_change(self):
+        """Callback for the checkboxes on change
+        """
+        self.check_changes()
+    
     def close(self):
         """Checks for changes and closes the settings window
         """
@@ -305,7 +509,33 @@ class Settings(NewPageRoot):
         )
         self.controller.app_settings.update_app_setting(
             'BACKUPFREQUENCY_SECONDS',
-            int(self.backup_frequency.get())
+            int(self.backup_frequency.get()),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'DELETE_OLD_DAYS',
+            int(self.old_backup_days.get()),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'DELETE_QUICKSAVES',
+            self.delete_quicksaves_var.get(),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'DELETE_AUTOSAVES',
+            self.delete_autosaves_var.get(),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'DELETE_SAVES',
+            self.delete_saves_var.get(),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'BACKUP_PRUNING',
+            self.backup_pruning_var.get(),
+            category="BACKUP"
         )
         if self.controller.app_settings.save():
             self.status_text.set("Settings Saved")
