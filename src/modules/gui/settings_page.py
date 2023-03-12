@@ -35,6 +35,7 @@ class Settings(NewPageRoot):
             '%P'
         )
         self.backup_pruning_var = tk.BooleanVar()
+        self.backup_pruning_delete_var = tk.BooleanVar()
         self.delete_quicksaves_var = tk.BooleanVar()
         self.delete_autosaves_var = tk.BooleanVar()
         self.delete_saves_var = tk.BooleanVar()
@@ -163,7 +164,7 @@ class Settings(NewPageRoot):
         tk.Label(pruning_frame, text="Old Backups (days): ").grid(
             column=0,
             row=0,
-            pady=5,
+            pady=(5,2),
             sticky=tk.E
         )
         self.old_backup_days = tk.Entry(
@@ -180,11 +181,11 @@ class Settings(NewPageRoot):
         
         tk.Label(
             pruning_frame,
-            text="Enable Auto-Pruning\non Application Start:"
+            text="Mark old backups for deletion\nat application startup"
         ).grid(
             column=0,
             row=1,
-            pady=5,
+            pady=2,
             sticky=tk.E
         )
         self.backup_pruning = ttk.Checkbutton(
@@ -201,11 +202,32 @@ class Settings(NewPageRoot):
 
         tk.Label(
             pruning_frame,
-            text="Delete Quick Save Backups:"
+            text="Delete marked backups\nat application startup"
         ).grid(
             column=0,
             row=2,
-            pady=5,
+            pady=2,
+            sticky=tk.E
+        )
+        self.backup_pruning_delete = ttk.Checkbutton(
+            pruning_frame,
+            variable=self.backup_pruning_delete_var,
+            text='',
+            command=self.flag_change
+        )
+        self.backup_pruning_delete.grid(
+            column=1,
+            row=2,
+            sticky=(tk.W, tk.E)
+        )
+
+        tk.Label(
+            pruning_frame,
+            text="Delete Quick Save Backups:"
+        ).grid(
+            column=0,
+            row=3,
+            pady=2,
             sticky=tk.E
         )
         self.delete_quicksaves = ttk.Checkbutton(
@@ -216,7 +238,7 @@ class Settings(NewPageRoot):
         )
         self.delete_quicksaves.grid(
             column=1,
-            row=2,
+            row=3,
             sticky=(tk.W, tk.E)
         )
 
@@ -225,8 +247,8 @@ class Settings(NewPageRoot):
             text="Delete Auto Save Backups:"
         ).grid(
             column=0,
-            row=3,
-            pady=5,
+            row=4,
+            pady=2,
             sticky=tk.E
         )
         self.delete_autosaves = ttk.Checkbutton(
@@ -237,7 +259,7 @@ class Settings(NewPageRoot):
         )
         self.delete_autosaves.grid(
             column=1,
-            row=3,
+            row=4,
             sticky=(tk.W, tk.E)
         )
 
@@ -246,8 +268,8 @@ class Settings(NewPageRoot):
             text="Delete Normal Save Backups:"
         ).grid(
             column=0,
-            row=4,
-            pady=5,
+            row=5,
+            pady=2,
             sticky=tk.E
         )
         self.delete_saves = ttk.Checkbutton(
@@ -258,7 +280,7 @@ class Settings(NewPageRoot):
         )
         self.delete_saves.grid(
             column=1,
-            row=4,
+            row=5,
             sticky=(tk.W, tk.E)
         )
 
@@ -370,7 +392,13 @@ class Settings(NewPageRoot):
         )
         self.backup_pruning_var.set(
             self.controller.app_settings.get_app_setting(
-                "BACKUP_PRUNING",
+                "PRUNE_MARK_DELETION",
+                category="BACKUP"
+            )
+        )
+        self.backup_pruning_delete_var.set(
+            self.controller.app_settings.get_app_setting(
+                "PRUNE_DELETE",
                 category="BACKUP"
             )
         )
@@ -457,9 +485,17 @@ class Settings(NewPageRoot):
         
         if (
             self.controller.app_settings.get_app_setting(
-                "BACKUP_PRUNING",
+                "PRUNE_MARK_DELETION",
                 category="BACKUP"
             ) != self.backup_pruning_var.get()
+        ):
+            data_changed = True
+
+        if (
+            self.controller.app_settings.get_app_setting(
+                "PRUNE_DELETE",
+                category="BACKUP"
+            ) != self.backup_pruning_delete_var.get()
         ):
             data_changed = True
 
@@ -533,8 +569,13 @@ class Settings(NewPageRoot):
             category="BACKUP"
         )
         self.controller.app_settings.update_app_setting(
-            'BACKUP_PRUNING',
+            'PRUNE_MARK_DELETION',
             self.backup_pruning_var.get(),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'PRUNE_DELETE',
+            self.backup_pruning_delete_var.get(),
             category="BACKUP"
         )
         if self.controller.app_settings.save():

@@ -439,12 +439,22 @@ class StartPage(ttk.Frame):
         menu = tk.Menu(self, tearoff=0)
         
         menu.add_command(label="Edit", command=lambda: self.edit_save(indexes))
-        
+        menu.add_separator()
+        menu.add_command(label="Set Flag", command=lambda: self.set_backup_flag(indexes))
+        menu.add_command(label="Unset Flag", command=lambda: self.unset_backup_flag(indexes))
+        menu.add_separator()
+        menu.add_command(label="Mark for Deletion", command=lambda: self.set_backup_deleted(indexes))
+        menu.add_command(label="Unmark for Deletion", command=lambda: self.unset_backup_deleted(indexes))
+        menu.add_separator()
+
         # create our submenu of all playthrough indexes
         # this will allow us to bulk move saves to a selected playthrough
         submenu = tk.Menu(menu)
         menu.add_cascade(menu=submenu, label='Move to Playthough:')
         for p in self.controller.db.get_playthroughs():
+            if p['name'] == '__RECYCLE BIN__':
+                continue
+
             submenu.add_command(
                 label=f"{p['name']}",
                 command=lambda p=p: self.move_save(indexes, p['id'])
@@ -469,6 +479,59 @@ class StartPage(ttk.Frame):
         item = self.tree.item(indexes[0])
         Backup(self, self.controller, item['values'][8])
         
+    def set_backup_deleted(self, indexes):
+        """Removes the delete mark from the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash= item['values'][8]
+            filename=item['text']
+            backup = self.controller.db.get_backup_by_hash(hash)
+            if not backup['flag']:
+                self.controller.db.backup_set_delete(hash)
+            else:
+                self.controller.show_error("Can't set backup {} for deletion as it has been flagged".format(
+                    filename
+                ))
+        
+        self.populate_tree()
+
+    def unset_backup_deleted(self, indexes):
+        """Removes the delete mark from the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash= item['values'][8]
+            filename=item['text']
+            self.controller.db.backup_unset_delete(hash)
+        
+        self.populate_tree()
+
+    def set_backup_flag(self, indexes):
+        """sets the flag for the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash = item['values'][8]
+            filename=item['text']
+            self.controller.db.update_backup_flag(True, hash)
+            
+        self.populate_tree()
+
+    def unset_backup_flag(self, indexes):
+        """unsets the flag for the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash = item['values'][8]
+            filename=item['text']
+            self.controller.db.update_backup_flag(False, hash)
+            
+        self.populate_tree()
 
     def move_save(self, indexes, playthrough_id):
         """Moves the saves from one playthrough to another

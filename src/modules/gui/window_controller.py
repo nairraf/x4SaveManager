@@ -94,6 +94,10 @@ class WindowController(tk.Tk):
             self.show_error(msg)
         self.bind_events()
         self.check_update()
+        if self.app_settings.get_app_setting('PRUNE_MARK_DELETION', category='BACKUP'):
+            self.save_manager.mark_old_backups(silent=True)
+        if self.app_settings.get_app_setting('PRUNE_DELETE', category='BACKUP'):
+            self.save_manager.delete_backups(silent=True)
         self.startup()
 
     def set_window_title(self, text=""):

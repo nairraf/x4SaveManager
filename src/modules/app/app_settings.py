@@ -60,7 +60,8 @@ class AppSettings():
             },
             "BACKUP": {
                 "BACKUPFREQUENCY_SECONDS": 300,
-                "BACKUP_PRUNING": False,
+                "PRUNE_MARK_DELETION": False,
+                "PRUNE_DELETE": False,
                 "DELETE_QUICKSAVES": False,
                 "DELETE_AUTOSAVES": False,
                 "DELETE_SAVES": False,
@@ -170,7 +171,12 @@ class AppSettings():
             )
             # add more backup settings to the backup category
             self._create_app_setting(
-                "BACKUP_PRUNING",
+                "PRUNE_MARK_DELETION",
+                False,
+                category="BACKUP"
+            )
+            self._create_app_setting(
+                "PRUNE_DELETE",
                 False,
                 category="BACKUP"
             )

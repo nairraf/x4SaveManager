@@ -34,6 +34,107 @@ class SaveManager():
         self.backup_in_progress = False
         self.cancel_backup = threading.Event()
 
+    def mark_old_backups(self, silent=False):
+        """Tries to find backups that can be pruned.
+        Sets the deleted flag for all backups that can be pruned
+        
+        Args:
+            silent (bool): default False. set to True to display a message if
+                            no deletion candidiate backups are found
+        """
+        old_backups = self.controller.db.get_old_backups()
+        if old_backups:
+            for backup in old_backups:
+                self.controller.db.backup_set_delete(
+                    backup['file_hash']
+                )
+            self.controller.show_message("Marked {} Old Backups For Deletion".format(
+                len(old_backups)
+            ))
+            return
+        if not silent:
+            self.controller.show_message("No Backups were candidates for deletion with the current settings")
+    
+    def delete_backups(self, silent=False):
+        """Deletes all backups that have been marked for deletion
+        
+        Args:
+            silent (bool): default False. set to True to hide all confirmation messages
+        """
+        backups_to_delete = self.controller.db.get_backups_to_delete()
+
+        if len(backups_to_delete) == 0:
+            if not silent:
+                self.controller.show_message("There are no backups marked for deletion")
+            return False
+        
+        if not silent:
+            self.controller.show_question("""Are you sure you want to delete all backups that have been marked for deletion?
+
+WARNING: this will delete both the backup file and the database entry.
+WARNING: this action cannot be reversed.
+""")
+            if not self.controller.check_modal():
+                self.controller.show_message("Deletion Cancelled")
+                return False
+        
+        try:
+            deletion_error = False
+            for backup in backups_to_delete:
+                perform_delete = False
+                backup_file_path = os.path.join(
+                    self.controller.app_settings.get_app_setting('BACKUPPATH'),
+                    backup['backup_filename']
+                )
+
+                if (
+                    self.controller.app_settings.get_app_setting(
+                        'DELETE_QUICKSAVES',
+                        category="BACKUP"
+                    ) 
+                    and backup['x4_filename'].startswith('quicksave')
+                    and not backup['flag']
+                ):
+                    perform_delete = True
+
+                if (
+                    self.controller.app_settings.get_app_setting(
+                        'DELETE_AUTOSAVES',
+                        category="BACKUP"
+                    ) 
+                    and backup['x4_filename'].startswith('autosave')
+                    and not backup['flag']
+                ):
+                    perform_delete = True
+
+                if (
+                    self.controller.app_settings.get_app_setting(
+                        'DELETE_SAVES',
+                        category="BACKUP"
+                    ) 
+                    and backup['x4_filename'].startswith('save')
+                    and not backup['flag']
+                ):
+                    perform_delete = True
+
+                if perform_delete:
+                    os.remove(backup_file_path)
+                    self.controller.db.delete_backup(backup['file_hash'])
+                else:
+                    deletion_error = True
+            
+            if deletion_error and not silent:
+                self.controller.show_message("""Current settings are prohibiting the deletion of
+ one or more of the backups marked for deletion.
+
+Review which save types to delete in settings under backup settings
+and validate the the backups you want to delete are not flagged (flag = True)
+""")
+            return True
+        except Exception as e:
+            self.controller.show_error(e)
+            return False
+
     def stop_backup(self):
         """Stops the backup process/thread
         """

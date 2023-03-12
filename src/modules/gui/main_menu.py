@@ -69,6 +69,15 @@ class MainMenu():
             command=self.stop_backup,
             state='disabled'
         )
+        self.menu_backup.add_separator()
+        self.menu_backup.add_command(
+            label='Mark Old Backups For Deletion',
+            command=self.mark_old_backups
+        )
+        self.menu_backup.add_command(
+            label='Delete Marked Backups',
+            command=self.delete_backups
+        )
 
         # help menu
         self.menu_help.add_command(
@@ -81,6 +90,14 @@ class MainMenu():
             command=self.open_about
         )
 
+    def mark_old_backups(self):
+        self.controller.save_manager.mark_old_backups()
+        self.controller.startpage.populate_tree()
+
+    def delete_backups(self):
+        self.controller.save_manager.delete_backups()
+        self.controller.startpage.populate_tree()
+    
     def delete_playthrough(self):
         self.controller.playthrough_manager.delete_playthrough()
     
