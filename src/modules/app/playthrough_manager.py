@@ -72,8 +72,9 @@ class PlaythroughManager():
             )
 
             for backup in backups:
-                self.controller.db.set_backup_to_delete(
-                    backup["file_hash"]
+                self.controller.db.backup_set_delete(
+                    backup["file_hash"],
+                    move_playthrough = True
                 )
 
             if self.controller.db.delete_playthrough_by_name(

@@ -485,12 +485,12 @@ class Backup(NewPageRoot):
         """
         selected_playthrough = self.controller.db.get_playthrough_by_name(self.pid_dropdown.get())
         pid = selected_playthrough['id']
-        if (selected_playthrough['name'] == "__DELETE__" and
+        if (selected_playthrough['name'] == "__RECYCLE BIN__" and
             self.delete_var.get() == False
         ):
-            self.show_error("""Cannot assign backup to playthrough '__DELETE__'.
-All backups assigned to __DELETE__ must have the Delete checkbox selected.
-Please choose a playthrough that isn't '__DELETE__'""")
+            self.show_error("""Cannot assign backup to playthrough '__RECYCLE BIN__'.
+All backups assigned to __RECYCLE BIN__ must have the Delete checkbox selected.
+Please choose a playthrough that isn't '__RECYCLE BIN__'""")
             return
         
         if self.selected_backup['playthrough_id'] != pid:

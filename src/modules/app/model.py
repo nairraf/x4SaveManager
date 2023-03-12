@@ -122,8 +122,8 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         WHERE name = ?
         """
         
-        # we don't delete the __DELETE__ playthrough
-        if name == "__DELETE__":
+        # we don't delete the __RECYCLE BIN__ playthrough
+        if name == "__RECYCLE BIN__":
             return False
         
         with self.connection as c:
@@ -204,7 +204,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         """
         query = """
             SELECT name FROM playthroughs
-            ORDER BY name
+            ORDER BY CASE WHEN name = '__RECYCLE BIN__' THEN 1 else 2 END, name COLLATE NOCASE ASC
         """
         with self.connection as c:
             try:
@@ -268,28 +268,75 @@ Please choose a different playthrough name, one that doesn't already exist.""")
 
         return False
     
-    def set_backup_to_delete(self, hash):
+    def backup_set_delete(self, hash, move_playthrough=False):
         """marks a backup for deletion
+
+        Args:
+            hash (str): the hash for the backup to mark for deletion
+            move_playthrough (bool): default False. If True then
+                the playthrough is moved to the __RECYCLE BIN__ playthrough
+        """
+        query = """
+                UPDATE backups SET "delete" = TRUE
+                WHERE file_hash = ?
+            """
+        if move_playthrough:
+            query = """
+                UPDATE backups SET "delete" = TRUE, playthrough_id = ?
+                WHERE file_hash = ?
+            """
+            # figure out the playthrough_id for __DELEDTED__ playthrough
+            dp = self.get_playthrough_by_name("__RECYCLE BIN__")
+        
+        with self.connection as c:
+            try:
+                if move_playthrough:
+                    c.execute(query, (
+                        dp['id'],
+                        hash
+                    ))
+                else:
+                    c.execute(query, (
+                        hash,
+                    ))
+                c.commit()
+                return True
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return False
+    
+    def backup_unset_delete(self, hash):
+        """unmarks a backup for deletion. The playthrough must not be set to
+        the __RECYCLE BIN__ playthrough
 
         Args:
             hash (str): the hash for the backup to mark for deletion
         """
         query = """
-            UPDATE backups SET "delete" = TRUE, playthrough_id = ?
+            UPDATE backups SET "delete" = FALSE
             WHERE file_hash = ?
         """
         # figure out the playthrough_id for __DELEDTED__ playthrough
-        dp = self.get_playthrough_by_name("__DELETE__")
-        with self.connection as c:
-            try:
-                c.execute(query, (
-                    dp['id'],
-                    hash
-                ))
-                c.commit()
-                return True
-            except sqlite3.Error as e:
-                self.controller.show_error(e)
+        dp = self.get_playthrough_by_name("__RECYCLE BIN__")
+        backup = self.get_backup_by_hash(hash)
+
+        if not dp['id'] == backup['playthrough_id']:
+            with self.connection as c:
+                try:
+                    c.execute(query, (
+                        hash,
+                    ))
+                    c.commit()
+                    return True
+                except sqlite3.Error as e:
+                    self.controller.show_error(e)
+        else:
+            self.controller.show_error("""Cannot Undelete backup {}.
+Please move the playthrough out of the __RECYCLE BIN__ 
+by assigning it to another playthrough""".format(
+            backup['backup_filename']
+            ))
         
         return False
 
@@ -311,6 +358,28 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                 c.execute(query, (
                     flag,
                     notes,
+                    hash, 
+                ))
+                c.commit()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+    def update_backup_flag(self, flag, hash):
+        """updates just the flag and notes fields for a specific
+        backup specified be the file hash
+
+        Args:
+            flag (bool): sets the flag for this backup
+            hash (str): the SHA256 hash of the backup to update
+        """
+        query = """
+            UPDATE backups SET flag = ?
+            WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    flag,
                     hash, 
                 ))
                 c.commit()
@@ -399,7 +468,30 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return None
     
-    def get_backups_to_delete(self):
+    def delete_backup(self, hash):
+        """Deletes a specific backup from the backups table
+        
+        Args:
+            hash (str): the file_hash of the backup to delete
+        """
+        query = """
+            DELETE FROM backups WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    hash, 
+                ))
+                c.commit()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+
+    def get_backups_to_delete(
+            self,
+            sort_column='x4_save_time',
+            sort_direction='asc'
+        ):
         """retreives all backups that have been marked for deletion
         """
         query = """
@@ -424,7 +516,11 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                 , "delete"
             FROM backups
             WHERE "delete" = TRUE
-        """
+            ORDER BY {} {}
+        """.format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -455,12 +551,22 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return None
 
-    def get_backups_by_id(self, playthrough_id, include_to_delete=False):
+    def get_backups_by_id(
+            self,
+            playthrough_id,
+            include_to_delete=False,
+            sort_column='x4_save_time',
+            sort_direction='asc'
+        ):
         """retreives all backups associated with a specific playthrough
         specified by it's id
         
         Args:
             playthrough_id (str): the playthrough_id
+            include_to_delete (bool): default False. Includes the items marked
+                                      for deletion
+            sort_column (str): which column to sort by (default is x4_save_time)
+            sort_direction (str): Default Asc. Asc/Desc
         """
         query = """
             SELECT
@@ -485,10 +591,16 @@ Please choose a different playthrough name, one that doesn't already exist.""")
             FROM backups
             WHERE playthrough_id = ?
         """
+
         if not include_to_delete:
             query += " AND \"delete\" IS NOT TRUE"
 
-        query += " ORDER BY x4_save_time"
+        # SQL Parameters can't be used in the order by
+        # they can only be used to replace values
+        query += " ORDER BY {} {}".format(
+            sort_column,
+            sort_direction
+        )
 
         with self.connection as c:
             try:
@@ -512,7 +624,99 @@ Please choose a different playthrough name, one that doesn't already exist.""")
                     'notes': row[16],
                     'delete': bool(row[17])
                 }
-                res = c.execute(query, (playthrough_id, )).fetchall()
+                res = c.execute(query, (
+                    playthrough_id, 
+                )).fetchall()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+    
+    def get_old_backups(self):
+        """retreives all backups older then the 'delete_old_days' app setting
+        which don't already have the delete mark set, and which don't have the
+        do not delete flag set
+        """
+        query = """
+            SELECT
+                playthrough_id
+                , x4_filename
+                , x4_save_time
+                , file_hash
+                , backup_time
+                , backup_filename
+                , backup_duration
+                , game_version
+                , original_game_version
+                , playtime
+                , x4_start_type
+                , character_name
+                , company_name
+                , money
+                , moded
+                , flag
+                , notes
+                , "delete"
+            FROM backups
+            WHERE 
+                x4_save_time <= unixepoch('now', '-{} day')
+                AND NOT "delete"
+                AND NOT flag
+        """.format(
+            self.controller.app_settings.get_app_setting(
+                'DELETE_OLD_DAYS',
+                category='BACKUP'
+            )
+        )
+
+        if (
+            self.controller.app_settings.get_app_setting(
+                'DELETE_QUICKSAVES',
+                category='BACKUP'
+            ) == False
+        ):
+            query += " and x4_filename NOT LIKE 'quicksave%' "
+        
+        if (
+            self.controller.app_settings.get_app_setting(
+                'DELETE_AUTOSAVES',
+                category='BACKUP'
+            ) == False
+        ):
+            query += " and x4_filename NOT LIKE 'autosave%' "
+        
+        if (
+            self.controller.app_settings.get_app_setting(
+                'DELETE_SAVES',
+                category='BACKUP'
+            ) == False
+        ):
+            query += " and x4_filename NOT LIKE 'save%' "
+
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: {
+                    'playthrough_id': row[0],
+                    'x4_filename': row[1],
+                    'x4_save_time': ctime(row[2]),
+                    'file_hash': row[3],
+                    'backup_time': ctime(row[4]),
+                    'backup_filename': row[5],
+                    'backup_duration': row[6],
+                    'game_version': row[7],
+                    'original_game_version': row[8],
+                    'playtime': row[9],
+                    'x4_start_type': row[10],
+                    'character_name': row[11],
+                    'company_name': row[12],
+                    'money': float(row[13] if row[13] else 0),
+                    'moded': bool(row[14]),
+                    'flag': bool(row[15]),
+                    'notes': row[16],
+                    'delete': bool(row[17])
+                }
+                res = c.execute(query).fetchall()
                 return res
             except sqlite3.Error as e:
                 self.controller.show_error(e)
@@ -662,7 +866,7 @@ Please choose a different playthrough name, one that doesn't already exist.""")
             """
             query2 = """
                 INSERT INTO playthroughs (name, notes)
-                VALUES ('__DELETE__', 'All Playthroughs with the delete flag set are listed here')
+                VALUES ('__RECYCLE BIN__', 'All Playthroughs with the delete flag set are listed here')
             """
             try:
                 with self.connection as c:

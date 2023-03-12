@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import tkinter as tk
+import os
 from tkinter import ttk
 from modules.app import Validate
 from .messages import MessageWindow
@@ -39,9 +40,11 @@ class StartPage(ttk.Frame):
         self.backup_flag_checkbox_var = tk.BooleanVar()
         self.modalresult = None
         self.progressbar_count = self.controller.app_settings.get_app_setting(
-            'BACKUPFREQUENCY_SECONDS'
+            'BACKUPFREQUENCY_SECONDS',
+            category="BACKUP"
         )
         self.last_backup_processed = None
+        self.sort_tree_dictionary = {}
         self.build_page()
         self.refresh_playthroughs()
 
@@ -69,7 +72,8 @@ class StartPage(ttk.Frame):
             orient="horizontal",
             mode="determinate",
             maximum=self.controller.app_settings.get_app_setting(
-                'BACKUPFREQUENCY_SECONDS'
+                'BACKUPFREQUENCY_SECONDS',
+                category="BACKUP"
             )
         )
         self.progress.grid(
@@ -381,12 +385,31 @@ class StartPage(ttk.Frame):
             row=1,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+
+        self.up_arrow = tk.PhotoImage(
+            file=os.path.join(self.controller.approot, 'img', 'up_arrow.png')
+        )
+
+        self.down_arrow = tk.PhotoImage(
+            file=os.path.join(self.controller.approot, 'img', 'down_arrow.png')
+        )
+
         self.tree.column('SaveTime', width=150, anchor='w')
-        self.tree.heading('SaveTime', text='Save Time')
+        self.tree.heading(
+            'SaveTime',
+            text='Save Time',
+            command=lambda: self.sort_tree('SaveTime', 'x4_save_time')
+        )
+
         self.tree.column('GameVersion', width=100, anchor='w')
         self.tree.heading('GameVersion', text='Game Version')
         self.tree.column('Playtime', width=80, anchor='e')
-        self.tree.heading('Playtime', text='Hours')
+
+        self.tree.heading(
+            'Playtime',
+            text='Hours',
+            command=lambda: self.sort_tree('Playtime', 'playtime')
+        )
         self.tree.column('Character', width=150, anchor='center')
         self.tree.heading('Character', text='Character')
         self.tree.column('Money', width=100, anchor='e')
@@ -416,12 +439,22 @@ class StartPage(ttk.Frame):
         menu = tk.Menu(self, tearoff=0)
         
         menu.add_command(label="Edit", command=lambda: self.edit_save(indexes))
-        
+        menu.add_separator()
+        menu.add_command(label="Set Flag", command=lambda: self.set_backup_flag(indexes))
+        menu.add_command(label="Unset Flag", command=lambda: self.unset_backup_flag(indexes))
+        menu.add_separator()
+        menu.add_command(label="Mark for Deletion", command=lambda: self.set_backup_deleted(indexes))
+        menu.add_command(label="Unmark for Deletion", command=lambda: self.unset_backup_deleted(indexes))
+        menu.add_separator()
+
         # create our submenu of all playthrough indexes
         # this will allow us to bulk move saves to a selected playthrough
         submenu = tk.Menu(menu)
         menu.add_cascade(menu=submenu, label='Move to Playthough:')
         for p in self.controller.db.get_playthroughs():
+            if p['name'] == '__RECYCLE BIN__':
+                continue
+
             submenu.add_command(
                 label=f"{p['name']}",
                 command=lambda p=p: self.move_save(indexes, p['id'])
@@ -436,7 +469,8 @@ class StartPage(ttk.Frame):
         in the treeview
         """
         index = self.tree.selection()
-        self.edit_save(index)
+        if index:
+            self.edit_save(index)
         
     def edit_save(self, indexes):
         """Open the edit backup window
@@ -445,6 +479,59 @@ class StartPage(ttk.Frame):
         item = self.tree.item(indexes[0])
         Backup(self, self.controller, item['values'][8])
         
+    def set_backup_deleted(self, indexes):
+        """Removes the delete mark from the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash= item['values'][8]
+            filename=item['text']
+            backup = self.controller.db.get_backup_by_hash(hash)
+            if not backup['flag']:
+                self.controller.db.backup_set_delete(hash)
+            else:
+                self.controller.show_error("Can't set backup {} for deletion as it has been flagged".format(
+                    filename
+                ))
+        
+        self.populate_tree()
+
+    def unset_backup_deleted(self, indexes):
+        """Removes the delete mark from the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash= item['values'][8]
+            filename=item['text']
+            self.controller.db.backup_unset_delete(hash)
+        
+        self.populate_tree()
+
+    def set_backup_flag(self, indexes):
+        """sets the flag for the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash = item['values'][8]
+            filename=item['text']
+            self.controller.db.update_backup_flag(True, hash)
+            
+        self.populate_tree()
+
+    def unset_backup_flag(self, indexes):
+        """unsets the flag for the currently selected backups
+        """
+
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash = item['values'][8]
+            filename=item['text']
+            self.controller.db.update_backup_flag(False, hash)
+            
+        self.populate_tree()
 
     def move_save(self, indexes, playthrough_id):
         """Moves the saves from one playthrough to another
@@ -459,16 +546,22 @@ class StartPage(ttk.Frame):
         self.controller.playthrough_manager.move_backups_to_index(entries, playthrough_id)
         self.populate_tree()
 
-    def populate_tree(self):
+    def populate_tree(self, sort_column='x4_save_time', sort_direction='asc'):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
+        
         if self.controller.delete_selected:
-            backups = self.controller.db.get_backups_to_delete()
+            backups = self.controller.db.get_backups_to_delete(
+                sort_column=sort_column,
+                sort_direction=sort_direction
+            )
 
         if self.controller.selected_playthrough and not self.controller.delete_selected:
             backups = self.controller.db.get_backups_by_id(
-                self.controller.selected_playthrough['id']
+                self.controller.selected_playthrough['id'],
+                sort_column=sort_column,
+                sort_direction=sort_direction
             )
         
         # delete all previous items in the tree
@@ -488,6 +581,29 @@ class StartPage(ttk.Frame):
                 save['notes'].partition('\n')[0],
                 save['file_hash']
             ))
+    
+    def sort_tree(self, heading, column):
+        self.clear_heading_images()
+        if column not in self.sort_tree_dictionary:
+            self.sort_tree_dictionary[column] = 'asc'
+
+        if self.sort_tree_dictionary[column] == 'asc':
+            self.sort_tree_dictionary[column] = 'desc'
+            self.tree.heading(
+                heading,
+                image=self.down_arrow
+            )
+        else:
+            self.sort_tree_dictionary[column] = 'asc'
+            self.tree.heading(
+                heading,
+                image=self.up_arrow
+            )
+                
+        self.populate_tree(
+            column,
+            self.sort_tree_dictionary[column]
+        )
 
     def create_playthrough(self):
         """Opens the create playthrough window
@@ -519,9 +635,9 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
-                if name == "__DELETE__":
+                if name == "__RECYCLE BIN__":
                     self.controller.delete_selected = True
-                    notes = self.controller.db.get_playthrough_by_name("__DELETE__")['notes']
+                    notes = self.controller.db.get_playthrough_by_name("__RECYCLE BIN__")['notes']
                 else:
                     self.controller.delete_selected = False
                     self.controller.selected_playthrough = self.controller.db.get_playthrough_by_name(name)
@@ -530,8 +646,19 @@ class StartPage(ttk.Frame):
                     notes = self.controller.selected_playthrough['notes']
                     self.controller.top_menu.menu_backup.entryconfigure('Start Backup', state='normal')
                 
+                self.clear_heading_images()
                 self.set_notes(notes)
                 self.populate_tree()
+
+    def clear_heading_images(self):
+        self.tree.heading(
+            'SaveTime',
+            image=''
+        )
+        self.tree.heading(
+            'Playtime',
+            image=''
+        )
     
     def edit_playthrough(self, event):
         """opens the edit playthrough window on double-click
@@ -541,6 +668,9 @@ class StartPage(ttk.Frame):
             if cur_selection:
                 index = cur_selection[0]
                 name = event.widget.get(index)
+                if name == "__RECYCLE BIN__":
+                    self.controller.show_error("Cannot edit the recycle bin")
+                    return
                 id = self.controller.db.get_playthrough_by_name(name)['id']
                 Playthrough(self, self.controller, name=name, id=id)
 
@@ -601,7 +731,8 @@ class StartPage(ttk.Frame):
         the next backup loop will happen
         """
         count = self.controller.app_settings.get_app_setting(
-            'BACKUPFREQUENCY_SECONDS'
+            'BACKUPFREQUENCY_SECONDS',
+            category="BACKUP"
         )
         if self.progressbar_count > 0:
             self.progressbar_count -= 1
