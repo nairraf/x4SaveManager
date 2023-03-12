@@ -550,9 +550,6 @@ class StartPage(ttk.Frame):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
-
-        if not self.controller.selected_playthrough:
-            return
         
         if self.controller.delete_selected:
             backups = self.controller.db.get_backups_to_delete(
