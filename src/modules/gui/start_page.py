@@ -356,8 +356,18 @@ class StartPage(ttk.Frame):
             sticky=(tk.W, tk.E)
         )
 
+        tree_frame = tk.Frame(
+            details_frame
+        )
+        tree_frame.grid(
+            column=0,
+            row=1,
+            sticky=(tk.W, tk.N, tk.E, tk.S)
+        )
+        tree_frame.grid_columnconfigure(0, weight=1)
+        tree_frame.grid_rowconfigure(0, weight=1)
         self.tree = ttk.Treeview(
-            details_frame,
+            tree_frame,
             columns=(
                 'SaveTime',
                 'GameVersion',
@@ -382,8 +392,20 @@ class StartPage(ttk.Frame):
         )
         self.tree.grid(
             column=0,
-            row=1,
+            row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
+        )
+
+        tree_v_scroll = ttk.Scrollbar(
+            tree_frame,
+            orient='vertical',
+            command=self.tree.yview
+        )
+        self.tree['yscrollcommand'] = tree_v_scroll.set
+        tree_v_scroll.grid(
+            column=1,
+            row=0,
+            sticky=(tk.N, tk.S)
         )
 
         self.up_arrow = tk.PhotoImage(
