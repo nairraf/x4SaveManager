@@ -161,6 +161,50 @@ and validate the the backups you want to delete are not flagged (flag = True)
         self.controller.event_generate("<<BackupThreadStarted>>")
         self.backup_thread.start()
     
+    def restore_backup(self, backup_filename, x4_save_slot):
+        """resotres a backup to a given X4 save location
+
+        Args:
+            backup_filename (str): the backup filename to restore
+            x4_save_slot (str): the x4 save name to restore to
+        """
+        message=f"""
+Are you sure you want to restore backup: {backup_filename}
+and overwrite the following X4 save file: {x4_save_slot}?
+
+WARNING: this will overwrite the X4 save file if it exists.
+"""
+        self.controller.show_question(message)
+        if not self.controller.check_modal():
+            self.controller.show_message("Restore Cancelled")
+            return
+        
+        # restore backup to the requested slot
+        backup_path = os.path.join(
+            self.controller.app_settings.get_app_setting('BACKUPPATH'),
+            backup_filename
+        )
+        x4_save_path = os.path.join(
+            self.controller.app_settings.get_app_setting('X4SAVEPATH'),
+            f"{x4_save_slot}.xml.gz"
+        )
+        if not os.path.exists(backup_path):
+            self.controller.show_error("Backup file not found, Restore Failed")
+            return
+        
+        if not os.path.exists(self.controller.app_settings.get_app_setting('X4SAVEPATH')):
+            self.controller.show_error("X4 Save Folder not found, Restore Failed")
+            return
+        
+        try:
+            shutil.copyfile(backup_path, x4_save_path)
+            self.controller.show_message("Backup Successfully restored to X4 slot {}".format(
+                x4_save_slot
+            ))
+        except Exception as e:
+            self.controller.show_error(e)
+        
+
     def start_backup_thread(self, settings, message_queue, playthrough):
         """This is the main backup process which is handed to a dedicated
         thread.

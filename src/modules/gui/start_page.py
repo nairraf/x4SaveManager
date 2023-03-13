@@ -459,6 +459,23 @@ class StartPage(ttk.Frame):
                 label=f"{p['name']}",
                 command=lambda p=p: self.move_save(indexes, p['id'])
             )
+        menu.add_separator()
+        restore_menu = tk.Menu(menu)
+        menu.add_cascade(menu=restore_menu, label="Restore Selected Backup To X4 Slot:")
+        restore_menu.add_command(
+            label="Quicksave",
+            command=lambda: self.restore_save(indexes, slot='quicksave')
+        )
+        for slot in range(1, 11):
+            if slot < 10:
+                slotname=f"save_00{slot}"
+            else:
+                slotname=f"save_0{slot}"
+            restore_menu.add_command(
+                label=f"Save {slot}",
+                command=lambda slotname=slotname: self.restore_save(indexes, slot=slotname)
+            )
+        
         try:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
@@ -496,6 +513,24 @@ class StartPage(ttk.Frame):
                 ))
         
         self.populate_tree()
+
+    def restore_save(self, indexes, slot):
+        """Restores the selected backup to a specific X4 slot
+        """
+        # make sure that there is a backup selected in the treeview
+        if len(indexes) == 0:
+            return
+        
+        # make sure there is only a single backup selected in the treeview
+        if len(indexes) > 1:
+            self.controller.show_error("You can only select a single backup when restoring")
+            return
+        
+        # figure out which backup is selected, and pass it to save_manager to restore
+        item = self.tree.item(indexes[0])
+        filename=item['text']
+        self.controller.save_manager.restore_backup(filename, slot)
+        
 
     def unset_backup_deleted(self, indexes):
         """Removes the delete mark from the currently selected backups
