@@ -142,6 +142,7 @@ and validate the the backups you want to delete are not flagged (flag = True)
         self.backup_in_progress = False
         self.controller.startpage.hide_backup_frame()
         self.controller.event_generate("<<BackupIdle>>")
+        self.controller.startpage.populate_tree()
 
     def start_backup(self):
         """starts the backup process/thread

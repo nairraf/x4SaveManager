@@ -44,7 +44,11 @@ class StartPage(ttk.Frame):
             category="BACKUP"
         )
         self.last_backup_processed = None
-        self.sort_tree_dictionary = {}
+        self.tree_cursort = {
+            'column': 'x4_save_time',
+            'direction': 'ASC',
+            'heading': 'SaveTime'
+        }
         self.build_page()
         self.refresh_playthroughs()
 
@@ -603,10 +607,15 @@ class StartPage(ttk.Frame):
         self.controller.playthrough_manager.move_backups_to_index(entries, playthrough_id)
         self.populate_tree()
 
-    def populate_tree(self, sort_column='x4_save_time', sort_direction='asc'):
+    def populate_tree(self, sort_column=None, sort_direction=None):
         """Populates the treeview with a list of backups for the currently
         selected playthrough
         """
+        self.clear_heading_images()
+
+        if not sort_column and not sort_direction:
+            sort_column = self.tree_cursort['column']
+            sort_direction = self.tree_cursort['direction']
         
         if self.controller.delete_selected:
             backups = self.controller.db.get_backups_to_delete(
@@ -638,29 +647,36 @@ class StartPage(ttk.Frame):
                 save['notes'].partition('\n')[0],
                 save['file_hash']
             ))
-    
-    def sort_tree(self, heading, column):
-        self.clear_heading_images()
-        if column not in self.sort_tree_dictionary:
-            self.sort_tree_dictionary[column] = 'asc'
-
-        if self.sort_tree_dictionary[column] == 'asc':
-            self.sort_tree_dictionary[column] = 'desc'
+        
+        if self.tree_cursort['direction'] == 'ASC':
             self.tree.heading(
-                heading,
-                image=self.down_arrow
-            )
-        else:
-            self.sort_tree_dictionary[column] = 'asc'
-            self.tree.heading(
-                heading,
+                self.tree_cursort['heading'],
                 image=self.up_arrow
             )
+        else:
+            self.tree.heading(
+                self.tree_cursort['heading'],
+                image=self.down_arrow
+            )
+    
+    def sort_tree(self, heading, column):
+        # check if we are changing columns
+        # if so, set the initial sort direction to DESC
+        # this way the below logic will flip it to ASC
+        # so that when you change columns, it will always
+        # be ASC sorted by default
+        if not column == self.tree_cursort['column']:
+            self.tree_cursort['direction'] = 'DESC'
+
+        self.tree_cursort['column'] = column
+        self.tree_cursort['heading'] = heading
+
+        if self.tree_cursort['direction'] == 'ASC':
+            self.tree_cursort['direction'] = 'DESC'
+        else:
+            self.tree_cursort['direction'] = 'ASC'
                 
-        self.populate_tree(
-            column,
-            self.sort_tree_dictionary[column]
-        )
+        self.populate_tree()
 
     def create_playthrough(self):
         """Opens the create playthrough window
