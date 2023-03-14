@@ -28,6 +28,7 @@ class StatusBar(ttk.Frame):
         self._parent = parent
         self.controller = controller
         self._center_message = "Backup Status:"
+        self._right_message = "Branch Filter:"
 
         # dictionary holding all the messages to display on the status bar
         # these variables will be watched for change by the appropriate
@@ -112,7 +113,7 @@ class StatusBar(ttk.Frame):
         """
         self.messages['center'].set(f"{self._center_message} {message}")
 
-    def set_message_right(self, message):
+    def set_branch_filter(self, message):
         """updates the right status area with 'message'
         """
-        self.messages['right'].set(message)
+        self.messages['right'].set(f"{self._right_message} {message}")

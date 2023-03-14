@@ -25,6 +25,9 @@ class Backup(NewPageRoot):
         self.cur_playthrough = self.controller.db.get_playthrough_by_id(
             self.selected_backup['playthrough_id']
         )
+        self.branches = self.controller.db.get_branches(
+            self.selected_backup['playthrough_id']
+        )
         self.flag_var = tk.BooleanVar()
         self.delete_var = tk.BooleanVar()
         self.status_label_var = tk.StringVar()
@@ -63,6 +66,24 @@ class Backup(NewPageRoot):
             row=0,
         )
         self.pid_dropdown.set(self.cur_playthrough['name'])
+
+        # branch
+        tk.Label(
+            self.frame,
+            text="Branch:"
+        ).grid(
+            column=0,
+            row=1,
+        )
+        self.branches_dropdown = ttk.Combobox(
+            self.frame,
+            values=self.branches
+        )
+        self.branches_dropdown.grid(
+            column=1,
+            row=1,
+        )
+        self.branches_dropdown.set(self.selected_backup['branch'])
 
         # spacer
         tk.Label(
@@ -243,7 +264,7 @@ class Backup(NewPageRoot):
             text="Game Version:"
         ).grid(
             column=0,
-            row=1,
+            row=2,
             sticky=tk.E
         )
         gv = tk.Entry(
@@ -251,7 +272,7 @@ class Backup(NewPageRoot):
         )
         gv.grid(
             column=1,
-            row=1,
+            row=2,
             sticky=(tk.W, tk.E)
         )
         gv.insert(0, self.selected_backup['game_version'])
@@ -263,7 +284,7 @@ class Backup(NewPageRoot):
             text="Original Game Version:"
         ).grid(
             column=0,
-            row=2,
+            row=3,
             sticky=tk.E
         )
         ogv = tk.Entry(
@@ -271,7 +292,7 @@ class Backup(NewPageRoot):
         )
         ogv.grid(
             column=1,
-            row=2,
+            row=3,
             sticky=(tk.W, tk.E)
         )
         ogv.insert(0, self.selected_backup['original_game_version'])
@@ -283,7 +304,7 @@ class Backup(NewPageRoot):
             text="Playtime (hours):"
         ).grid(
             column=0,
-            row=3,
+            row=4,
             sticky=tk.E
         )
         pth = tk.Entry(
@@ -291,7 +312,7 @@ class Backup(NewPageRoot):
         )
         pth.grid(
             column=1,
-            row=3,
+            row=4,
             sticky=(tk.W, tk.E)
         )
         pth.insert(0, f"{self.selected_backup['playtime']/60/60:0.2f}")
@@ -303,7 +324,7 @@ class Backup(NewPageRoot):
             text="X4 Start Type:"
         ).grid(
             column=0,
-            row=4,
+            row=5,
             sticky=tk.E
         )
         st = tk.Entry(
@@ -311,7 +332,7 @@ class Backup(NewPageRoot):
         )
         st.grid(
             column=1,
-            row=4,
+            row=5,
             sticky=(tk.W, tk.E)
         )
         st.insert(0, self.selected_backup['x4_start_type'])
@@ -323,7 +344,7 @@ class Backup(NewPageRoot):
             text="Character Name:"
         ).grid(
             column=0,
-            row=5,
+            row=6,
             sticky=tk.E
         )
         cn = tk.Entry(
@@ -331,7 +352,7 @@ class Backup(NewPageRoot):
         )
         cn.grid(
             column=1,
-            row=5,
+            row=6,
             sticky=(tk.W, tk.E)
         )
         cn.insert(0, self.selected_backup['character_name'])
@@ -343,7 +364,7 @@ class Backup(NewPageRoot):
             text="Money:"
         ).grid(
             column=0,
-            row=6,
+            row=7,
             sticky=tk.E
         )
         m = tk.Entry(
@@ -351,7 +372,7 @@ class Backup(NewPageRoot):
         )
         m.grid(
             column=1,
-            row=6,
+            row=7,
             sticky=(tk.W, tk.E)
         )
         m.insert(0, f"${self.selected_backup['money']:,.0f}")
@@ -464,6 +485,8 @@ class Backup(NewPageRoot):
         # bindings
         self.text_editor.bind("<KeyPress>", self.check_changes)
         self.pid_dropdown.bind('<<ComboboxSelected>>', self.check_changes)
+        self.branches_dropdown.bind('<<ComboboxSelected>>', self.check_changes)
+        self.branches_dropdown.bind('<KeyPress>', self.check_changes)
 
         self.show_window()
 
@@ -510,6 +533,7 @@ Please choose a playthrough that isn't '__RECYCLE BIN__'""")
         
         if self.controller.db.save_backup(
             playthrough_id=pid,
+            branch=self.branches_dropdown.get(),
             flag=self.flag_var.get(),
             file_hash=self.selected_backup['file_hash'],
             notes=self.text_editor.get('1.0', 'end'),

@@ -36,9 +36,10 @@ class StartPage(ttk.Frame):
         self.playthrough_var = tk.StringVar()
         self.playthrousghs_var = tk.StringVar()
         self.backup_note_var = tk.StringVar()
-        self.backup_save_count = 0
         self.backup_flag_checkbox_var = tk.BooleanVar()
         self.modalresult = None
+        self.selected_branch = None
+        self.user_selected_branch = None
         self.progressbar_count = self.controller.app_settings.get_app_setting(
             'BACKUPFREQUENCY_SECONDS',
             category="BACKUP"
@@ -129,6 +130,26 @@ class StartPage(ttk.Frame):
             padx=2,
             sticky=(tk.E, tk.W)
         )
+        self.backup_branch_label = tk.Label(
+            self.backup_options_frame,
+            text="Branch :"
+        )
+        self.backup_branch_label.grid(
+            column=3,
+            row=0,
+            padx=2,
+            sticky=tk.W
+        )
+        self.backup_branch_dropdown = ttk.Combobox(
+            self.backup_options_frame
+        )
+        self.backup_branch_dropdown.grid(
+            column=4,
+            row=0,
+            padx=2,
+            sticky=tk.E
+        )
+
         self.backup_data_frame = tk.Frame(
            self.backup_frame
         )
@@ -374,7 +395,7 @@ class StartPage(ttk.Frame):
             tree_frame,
             columns=(
                 'SaveTime',
-                'GameVersion',
+                'Branch',
                 'Playtime',
                 'Character',
                 'Money',
@@ -385,7 +406,7 @@ class StartPage(ttk.Frame):
             ),
             displaycolumns=(
                 'SaveTime',
-                'GameVersion',
+                'Branch',
                 'Playtime',
                 'Character',
                 'Money',
@@ -427,8 +448,8 @@ class StartPage(ttk.Frame):
             command=lambda: self.sort_tree('SaveTime', 'x4_save_time')
         )
 
-        self.tree.column('GameVersion', width=100, anchor='w')
-        self.tree.heading('GameVersion', text='Game Version')
+        self.tree.column('Branch', width=100, anchor='center')
+        self.tree.heading('Branch', text='Branch')
         self.tree.column('Playtime', width=80, anchor='e')
 
         self.tree.heading(
@@ -471,7 +492,30 @@ class StartPage(ttk.Frame):
         menu.add_separator()
         menu.add_command(label="Mark for Deletion", command=lambda: self.set_backup_deleted(indexes))
         menu.add_command(label="Unmark for Deletion", command=lambda: self.unset_backup_deleted(indexes))
-        menu.add_separator()
+        if not self.controller.delete_selected:
+            menu.add_separator()
+            display_branch_submenu = tk.Menu(menu)
+            branch_submenu = tk.Menu(menu)
+            menu.add_cascade(menu=display_branch_submenu, label="Display Branch:")
+            display_branch_submenu.add_command(
+                label='All',
+                command=lambda: self.display_branch('All')
+            )
+
+            menu.add_cascade(menu=branch_submenu, label="Set Branch:")
+            for name in self.controller.db.get_branches(
+                self.controller.selected_playthrough['id']
+            ):
+                branch_submenu.add_command(
+                    label=name,
+                    command=lambda name=name: self.set_branch(indexes, name)
+                )
+
+                display_branch_submenu.add_command(
+                    label=name,
+                    command=lambda name=name: self.display_branch(name)
+                )
+            menu.add_separator()
 
         # create our submenu of all playthrough indexes
         # this will allow us to bulk move saves to a selected playthrough
@@ -557,6 +601,27 @@ class StartPage(ttk.Frame):
         filename=item['text']
         self.controller.save_manager.restore_backup(filename, slot)
         
+    def set_branch(self, indexes, branch):
+        """Sets the branch name on currently selected backups
+        """
+        for idx in indexes:
+            item = self.tree.item(idx)
+            hash= item['values'][8]
+            self.controller.db.set_branch(
+                branch=branch,
+                hash=hash
+            )
+        
+        self.populate_tree()
+
+    def display_branch(self, branch):
+        if branch == 'All':
+            self.user_selected_branch = None
+            self.controller.statusbar.set_branch_filter('All')
+        else:
+            self.user_selected_branch = branch
+            self.controller.statusbar.set_branch_filter(branch)
+        self.populate_tree()
 
     def unset_backup_deleted(self, indexes):
         """Removes the delete mark from the currently selected backups
@@ -627,7 +692,8 @@ class StartPage(ttk.Frame):
             backups = self.controller.db.get_backups_by_id(
                 self.controller.selected_playthrough['id'],
                 sort_column=sort_column,
-                sort_direction=sort_direction
+                sort_direction=sort_direction,
+                branch=self.user_selected_branch
             )
         
         # delete all previous items in the tree
@@ -638,7 +704,7 @@ class StartPage(ttk.Frame):
         for save in backups:
             self.tree.insert('', 'end', text=save['backup_filename'], values=(
                 save['x4_save_time'],
-                save['game_version'],
+                save['branch'],
                 "{:0.2f}".format(save['playtime']/60/60),
                 save['character_name'],
                 "${:,.0f}".format(save['money']),
@@ -721,6 +787,8 @@ class StartPage(ttk.Frame):
                 
                 self.clear_heading_images()
                 self.set_notes(notes)
+                self.user_selected_branch=None
+                self.controller.statusbar.set_branch_filter('All')
                 self.populate_tree()
 
     def clear_heading_images(self):
@@ -769,12 +837,31 @@ class StartPage(ttk.Frame):
         """hides the main frame, and displays the backup frame
         when the backup thread is running
         """
+        self.update_branches_dropdown()
         self.pane.grid_forget()
         self.backup_frame.grid(
             column=0,
             row=0,
             sticky=(tk.N, tk.E, tk.S, tk.W)
         )
+
+    def update_branches_dropdown(self):
+        """Updates the branches dropdown in the backup page
+        """
+        branches = self.controller.db.get_branches(
+            self.controller.selected_playthrough['id']
+        )
+        self.backup_branch_dropdown.configure(
+            values=branches
+        )
+        if self.selected_branch:
+            self.backup_branch_dropdown.set(
+                self.selected_branch
+            )
+        else:
+            self.backup_branch_dropdown.set(
+                branches[0]
+            )
 
     def hide_backup_frame(self):
         """hides the backup from and shows the main frame
@@ -831,11 +918,27 @@ class StartPage(ttk.Frame):
             self.controller.db.update_backup_options(
                 self.backup_flag_checkbox_var.get(),
                 self.backup_note_var.get(),
+                self.backup_branch_dropdown.get(),
                 self.last_backup_processed['hash']
             )
+            self.selected_branch = self.backup_branch_dropdown.get()
+            self.update_branches_dropdown()
             self.last_backup_processed = None
             self.backup_flag_checkbox_var.set(False)
-            self.backup_note.delete(0,'end') 
+            self.backup_note.delete(0,'end')
+
+            # if we are not processing a backup, display the history of backups
+            # for this session
+            if len(data['x4saves']) > 0 and data['processing'] == 0:
+                message += "\nx4saves backed up:\n"
+                for save in data['x4saves']:
+                    message += "    {}  ->   {} in  {:0.4f} seconds\n".format(
+                        save['x4save'],
+                        save['backup_filename'],
+                        save['backup_timespan']
+                    )
+
+            update_data_box = True
 
         # record the backup in progress details and display progress
         if data['processing'] == 1:
@@ -848,21 +951,6 @@ class StartPage(ttk.Frame):
             message += "this may take a few minutes\n"
             message += "    now backing up and extracting info from backup file\n\n"
             
-            update_data_box = True
-            
-        # if we are not processing a backup, display the history of backups
-        # for this session
-        if len(data['x4saves']) > 0 and data['processing'] == 0:
-            message += "\nx4saves backed up:\n"
-            for save in data['x4saves']:
-                message += "    {}  ->   {} in  {:0.4f} seconds\n".format(
-                    save['x4save'],
-                    save['backup_filename'],
-                    save['backup_timespan']
-                )
-
-        if len(data['x4saves']) > self.backup_save_count and data['processing'] == 0:
-            self.backup_save_count = len(data['x4saves'])
             update_data_box = True
             
         if update_data_box:
