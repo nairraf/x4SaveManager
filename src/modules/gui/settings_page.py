@@ -8,6 +8,7 @@ from .new_page_root import NewPageRoot
 from os import path
 from pathlib import PurePath
 from modules.app import Validate
+from idlelib.tooltip import Hovertip
 
 class Settings(NewPageRoot):
     """The main application settings window
@@ -28,6 +29,7 @@ class Settings(NewPageRoot):
         self.db_path_text = tk.StringVar()
         self.backup_path_text = tk.StringVar()
         self.old_backup_days_text = tk.StringVar()
+        self.do_not_delete_backups_text = tk.StringVar()
         self.x4save_path_text = tk.StringVar()
         self.backup_frequency_text = tk.StringVar()
         self.check_int_wrapper = (
@@ -42,7 +44,7 @@ class Settings(NewPageRoot):
 
         self.set_title("Settings")
         
-        self.minsize(650,300)
+        self.minsize(650,350)
         
         nb = ttk.Notebook(
             self,
@@ -148,6 +150,10 @@ class Settings(NewPageRoot):
             row=0,
             sticky=(tk.W, tk.E)
         )
+        Hovertip(
+            self.backup_frequency,
+            "The number of seconds to wait\nbefore checking for new X4 Save files"
+        )
 
         pruning_frame = tk.LabelFrame(
             backup_page,
@@ -178,13 +184,46 @@ class Settings(NewPageRoot):
             row=0,
             sticky=(tk.W, tk.E)
         )
+        Hovertip(
+            self.old_backup_days,
+            """Backups older than this amount of days
+will be candidates for pruning.
+
+NOTE: 
+  backups that have their flag set will never be pruned."""
+        )
+
+        tk.Label(pruning_frame, text="Never prune the last backups:").grid(
+            column=0,
+            row=1,
+            pady=2,
+            sticky=tk.E
+        )
+        self.do_not_delete_backups = tk.Entry(
+            pruning_frame,
+            textvariable=self.do_not_delete_backups_text,
+            validate='key',
+            validatecommand=self.check_int_wrapper
+        )
+        self.do_not_delete_backups.grid(
+            column=1,
+            row=1,
+            sticky=(tk.W, tk.E)
+        )
+        Hovertip(
+            self.do_not_delete_backups,
+        """Never prune this number of the latest backup files
+
+NOTE: 
+  backups that have their flag set will never be pruned."""
+        )
         
         tk.Label(
             pruning_frame,
-            text="Mark old backups for deletion\nat application startup"
+            text="Prune backups application startup"
         ).grid(
             column=0,
-            row=1,
+            row=2,
             pady=2,
             sticky=tk.E
         )
@@ -196,8 +235,20 @@ class Settings(NewPageRoot):
         )
         self.backup_pruning.grid(
             column=1,
-            row=1,
+            row=2,
             sticky=(tk.W, tk.E)
+        )
+        Hovertip(
+            self.backup_pruning,
+            """Should Pruning be run at application startup?
+
+Note:
+  Backups that are candidates for deletion will be marked
+  for deletion by the pruning process.
+
+  You can view all backups that have been marked for deletion
+  in the __RECYCLE BIN__.
+"""
         )
 
         tk.Label(
@@ -205,7 +256,7 @@ class Settings(NewPageRoot):
             text="Delete marked backups\nat application startup"
         ).grid(
             column=0,
-            row=2,
+            row=3,
             pady=2,
             sticky=tk.E
         )
@@ -217,16 +268,26 @@ class Settings(NewPageRoot):
         )
         self.backup_pruning_delete.grid(
             column=1,
-            row=2,
+            row=3,
             sticky=(tk.W, tk.E)
         )
+        Hovertip(
+            self.backup_pruning_delete,
+            """Should all marked backups be deleted application startup?
 
+Note:
+  Backups that are candidates for deletion will be marked
+  for deletion by the pruning process.
+
+  You can view all backups that have been marked for deletion
+  in the __RECYCLE BIN__."""
+        )
         tk.Label(
             pruning_frame,
             text="Delete Quick Save Backups:"
         ).grid(
             column=0,
-            row=3,
+            row=4,
             pady=2,
             sticky=tk.E
         )
@@ -238,8 +299,12 @@ class Settings(NewPageRoot):
         )
         self.delete_quicksaves.grid(
             column=1,
-            row=3,
+            row=4,
             sticky=(tk.W, tk.E)
+        )
+        Hovertip(
+            self.delete_quicksaves,
+            "Should backups of X4 quicksaves be eligiable for pruning/deletion?"
         )
 
         tk.Label(
@@ -247,7 +312,7 @@ class Settings(NewPageRoot):
             text="Delete Auto Save Backups:"
         ).grid(
             column=0,
-            row=4,
+            row=5,
             pady=2,
             sticky=tk.E
         )
@@ -259,8 +324,12 @@ class Settings(NewPageRoot):
         )
         self.delete_autosaves.grid(
             column=1,
-            row=4,
+            row=5,
             sticky=(tk.W, tk.E)
+        )
+        Hovertip(
+            self.delete_autosaves,
+            "Should backups of X4 autosaves be eligiable for pruning/deletion?"
         )
 
         tk.Label(
@@ -268,7 +337,7 @@ class Settings(NewPageRoot):
             text="Delete Normal Save Backups:"
         ).grid(
             column=0,
-            row=5,
+            row=6,
             pady=2,
             sticky=tk.E
         )
@@ -280,8 +349,16 @@ class Settings(NewPageRoot):
         )
         self.delete_saves.grid(
             column=1,
-            row=5,
+            row=6,
             sticky=(tk.W, tk.E)
+        )
+        Hovertip(
+            self.delete_saves,
+            """Should backups of X4 normal saves be eligiable for pruning/deletion?
+            
+Note:
+  Normal saves are the save_001 through save_010 X4 saves.
+  In the X4 load screen, these correlate to the 1 through 10 save slots"""
         )
 
         # add the pages to our notebook
@@ -342,6 +419,7 @@ class Settings(NewPageRoot):
         self.x4save_path_text.trace_add('write', self.check_changes)
         self.backup_frequency_text.trace_add('write', self.check_changes)
         self.old_backup_days_text.trace_add('write', self.check_changes)
+        self.do_not_delete_backups_text.trace_add('write', self.check_changes)
         self.protocol("WM_DELETE_WINDOW", self.close)
         
         self.show_window()
@@ -363,6 +441,12 @@ class Settings(NewPageRoot):
         self.old_backup_days_text.set(
             self.controller.app_settings.get_app_setting(
                 'DELETE_OLD_DAYS',
+                category='BACKUP'
+            )
+        )
+        self.do_not_delete_backups_text.set(
+            self.controller.app_settings.get_app_setting(
+                'DO_NOT_DELETE_LAST',
                 category='BACKUP'
             )
         )
@@ -459,6 +543,18 @@ class Settings(NewPageRoot):
         else:
             self.old_backup_days.config(background="White")
 
+        if ( len(self.do_not_delete_backups.get()) > 0 
+             and not int(self.do_not_delete_backups.get()) == 
+             self.controller.app_settings.get_app_setting(
+                'DO_NOT_DELETE_LAST',
+                category="BACKUP"
+             )
+           ):
+            data_changed = True
+            self.do_not_delete_backups.config(background="Yellow")
+        else:
+            self.do_not_delete_backups.config(background="White")
+
         if (
             self.controller.app_settings.get_app_setting(
                 "DELETE_QUICKSAVES",
@@ -551,6 +647,11 @@ class Settings(NewPageRoot):
         self.controller.app_settings.update_app_setting(
             'DELETE_OLD_DAYS',
             int(self.old_backup_days.get()),
+            category="BACKUP"
+        )
+        self.controller.app_settings.update_app_setting(
+            'DO_NOT_DELETE_LAST',
+            int(self.do_not_delete_backups.get()),
             category="BACKUP"
         )
         self.controller.app_settings.update_app_setting(

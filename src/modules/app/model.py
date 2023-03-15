@@ -237,25 +237,28 @@ Please choose a different playthrough name, one that doesn't already exist.""")
         
         return False
     
-    def save_backup(self, playthrough_id, flag, notes, delete, file_hash):
+    def save_backup(self, playthrough_id, branch, flag, notes, delete, file_hash):
         """Used by the edit backup window. Saves the changes for
         the specific file_hash to the DB.
 
         Args:
             playthrough_id (int): the corresponding playthrough id
+            branch (str): the branch to assign the backup to
             flag (bool): flag this backup
             notes (str): the notes for this backup
             delete (bool): the delete flag for this backup
             file_hash (str): the hash of the backup to update
         """
         query = """
-            UPDATE backups SET playthrough_id = ?, flag = ?, notes = ?, "delete" = ?
+            UPDATE backups 
+            SET playthrough_id = ?, branch = ?, flag = ?, notes = ?, "delete" = ?
             WHERE file_hash = ?
         """
         with self.connection as c:
             try:
                 c.execute(query, (
                     playthrough_id,
+                    branch,
                     flag,
                     notes,
                     delete,
@@ -340,17 +343,18 @@ by assigning it to another playthrough""".format(
         
         return False
 
-    def update_backup_options(self, flag, notes, hash):
+    def update_backup_options(self, flag, notes, branch, hash):
         """updates just the flag and notes fields for a specific
         backup specified be the file hash
 
         Args:
             flag (bool): sets the flag for this backup
             notes (str): the notes for this backup
+            branch (str): the branch for this backup
             hash (str): the SHA256 hash of the backup to update
         """
         query = """
-            UPDATE backups SET flag = ?, notes = ?
+            UPDATE backups SET flag = ?, notes = ?, branch = ?
             WHERE file_hash = ?
         """
         with self.connection as c:
@@ -358,6 +362,7 @@ by assigning it to another playthrough""".format(
                 c.execute(query, (
                     flag,
                     notes,
+                    branch,
                     hash, 
                 ))
                 c.commit()
@@ -380,6 +385,52 @@ by assigning it to another playthrough""".format(
             try:
                 c.execute(query, (
                     flag,
+                    hash, 
+                ))
+                c.commit()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+    def get_branches(self, playthrough_id):
+        """returns a list of branches associated for the given playthrough id
+
+        Args:
+            playthrough_id (int): the playthrough id
+        """
+        query="""
+            SELECT DISTINCT(branch) FROM backups
+            WHERE playthrough_id = ?
+            ORDER BY branch 
+        """
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: row[0]
+                res = c.execute(query, (playthrough_id, )).fetchall()
+                if res:
+                    return res
+                else:
+                    return ['1 - main']
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+
+    def set_branch(self, hash, branch):
+        """updates the branch name for a specific playthrough matched 
+        by the file hash
+
+        Args:
+            hash (str): the file hash
+            branch (str): the branch name
+        """
+        query = """
+            UPDATE backups SET branch = ?
+            WHERE file_hash = ?
+        """
+        with self.connection as c:
+            try:
+                c.execute(query, (
+                    branch,
                     hash, 
                 ))
                 c.commit()
@@ -436,6 +487,7 @@ by assigning it to another playthrough""".format(
                 , flag
                 , notes
                 , "delete"
+                , branch
             FROM backups
             WHERE file_hash = ?
         """
@@ -459,7 +511,8 @@ by assigning it to another playthrough""".format(
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
                     'notes': row[16],
-                    'delete': bool(row[17])
+                    'delete': bool(row[17]),
+                    'branch': row[18]
                 }
                 res = c.execute(query, (hash, )).fetchone()
                 return res
@@ -514,6 +567,7 @@ by assigning it to another playthrough""".format(
                 , flag
                 , notes
                 , "delete"
+                , branch
             FROM backups
             WHERE "delete" = TRUE
             ORDER BY {} {}
@@ -542,8 +596,33 @@ by assigning it to another playthrough""".format(
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
                     'notes': row[16],
-                    'delete': bool(row[17])
+                    'delete': bool(row[17]),
+                    'branch': row[18]
                 }
+                res = c.execute(query).fetchall()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+
+    def get_latest_backups(self):
+        """returns the file_hashes of the latest backups.
+        The number returned is configed in the backup options
+        "Do Not Prune Last Backups" option
+        """
+        query = """
+            SELECT file_hash FROM backups ORDER BY x4_save_time DESC LIMIT {}
+        """.format(
+            self.controller.app_settings.get_app_setting(
+                'DO_NOT_DELETE_LAST',
+                category='BACKUP'
+            )
+        )
+
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: row[0]
                 res = c.execute(query).fetchall()
                 return res
             except sqlite3.Error as e:
@@ -556,7 +635,8 @@ by assigning it to another playthrough""".format(
             playthrough_id,
             include_to_delete=False,
             sort_column='x4_save_time',
-            sort_direction='asc'
+            sort_direction='asc',
+            branch=None
         ):
         """retreives all backups associated with a specific playthrough
         specified by it's id
@@ -567,6 +647,8 @@ by assigning it to another playthrough""".format(
                                       for deletion
             sort_column (str): which column to sort by (default is x4_save_time)
             sort_direction (str): Default Asc. Asc/Desc
+            branch (str): by default all branches are returned. 
+                          limits the results to a specific branch
         """
         query = """
             SELECT
@@ -588,12 +670,18 @@ by assigning it to another playthrough""".format(
                 , flag
                 , notes
                 , "delete"
+                , branch
             FROM backups
             WHERE playthrough_id = ?
         """
 
         if not include_to_delete:
             query += " AND \"delete\" IS NOT TRUE"
+
+        if not branch:
+            branch = '%'
+
+        query += " AND branch like '{}'".format(branch)
 
         # SQL Parameters can't be used in the order by
         # they can only be used to replace values
@@ -622,10 +710,11 @@ by assigning it to another playthrough""".format(
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
                     'notes': row[16],
-                    'delete': bool(row[17])
+                    'delete': bool(row[17]),
+                    'branch': row[18]
                 }
                 res = c.execute(query, (
-                    playthrough_id, 
+                    playthrough_id,
                 )).fetchall()
                 return res
             except sqlite3.Error as e:
@@ -658,6 +747,7 @@ by assigning it to another playthrough""".format(
                 , flag
                 , notes
                 , "delete"
+                , branch
             FROM backups
             WHERE 
                 x4_save_time <= unixepoch('now', '-{} day')
@@ -714,7 +804,8 @@ by assigning it to another playthrough""".format(
                     'moded': bool(row[14]),
                     'flag': bool(row[15]),
                     'notes': row[16],
-                    'delete': bool(row[17])
+                    'delete': bool(row[17]),
+                    'branch': row[18]
                 }
                 res = c.execute(query).fetchall()
                 return res
@@ -742,7 +833,8 @@ by assigning it to another playthrough""".format(
             company_name = '',
             flag = False,
             notes = '',
-            delete = False
+            delete = False,
+            branch = "1 - main"
     ):
         """adds a new backups to the backups table
         
@@ -765,6 +857,8 @@ by assigning it to another playthrough""".format(
             flag (bool): the importance flag for this backup
             notes (str): the notes for this backup
             delete (bool): sets the delete flag (default: false)
+            branch (str): sets the playthrough branch for this backup.
+                          default: 1 - main
         """
         query = """
         INSERT INTO backups (
@@ -785,9 +879,10 @@ by assigning it to another playthrough""".format(
             moded,
             flag,
             notes,
-            "delete"
+            "delete",
+            branch
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         try:
             with self.connection as c:
@@ -809,7 +904,8 @@ by assigning it to another playthrough""".format(
                     moded,
                     flag,
                     notes,
-                    delete
+                    delete,
+                    branch
                 ))
                 c.commit()
         except sqlite3.Error as e:
@@ -874,6 +970,24 @@ by assigning it to another playthrough""".format(
                     c.execute(query1)
                     c.execute(query2)
                     c.execute("PRAGMA user_version=2")
+                    c.commit()
+                self.get_db_version()
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+
+        if self.version == 2:
+            branch_ddl = """
+                ALTER TABLE backups
+                ADD COLUMN branch TEXT
+            """
+            query = """
+                UPDATE backups SET branch = "1 - main"
+            """
+            try:
+                with self.connection as c:
+                    c.execute(branch_ddl)
+                    c.execute(query)
+                    c.execute("PRAGMA user_version=3")
                     c.commit()
                 self.get_db_version()
             except sqlite3.Error as e:
