@@ -606,6 +606,30 @@ by assigning it to another playthrough""".format(
         
         return None
 
+    def get_latest_backups(self):
+        """returns the file_hashes of the latest backups.
+        The number returned is configed in the backup options
+        "Do Not Prune Last Backups" option
+        """
+        query = """
+            SELECT file_hash FROM backups ORDER BY x4_save_time DESC LIMIT {}
+        """.format(
+            self.controller.app_settings.get_app_setting(
+                'DO_NOT_DELETE_LAST',
+                category='BACKUP'
+            )
+        )
+
+        with self.connection as c:
+            try:
+                c.row_factory = lambda cursor, row: row[0]
+                res = c.execute(query).fetchall()
+                return res
+            except sqlite3.Error as e:
+                self.controller.show_error(e)
+        
+        return None
+
     def get_backups_by_id(
             self,
             playthrough_id,

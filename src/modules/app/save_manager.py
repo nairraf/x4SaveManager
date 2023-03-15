@@ -43,13 +43,22 @@ class SaveManager():
                             no deletion candidiate backups are found
         """
         old_backups = self.controller.db.get_old_backups()
+        last_backups = self.controller.db.get_latest_backups()
+        marked = 0
         if old_backups:
             for backup in old_backups:
+                # make sure this backup is not one of the latest backups
+                # we never mark for deletion ond of the latest backups
+                # configure the number to keep in the backup settings
+                if backup['file_hash'] in last_backups:
+                    continue
+
+                marked += 1
                 self.controller.db.backup_set_delete(
                     backup['file_hash']
                 )
             self.controller.show_message("Marked {} Old Backups For Deletion".format(
-                len(old_backups)
+                marked
             ))
             return
         if not silent:
