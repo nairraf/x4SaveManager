@@ -66,6 +66,7 @@ class AppSettings():
                 "DELETE_AUTOSAVES": False,
                 "DELETE_SAVES": False,
                 "DELETE_OLD_DAYS": 30,
+                "DO_NOT_DELETE_LAST": 10
             }
         }
         self.save()
@@ -198,6 +199,11 @@ class AppSettings():
             self._create_app_setting(
                 "DELETE_OLD_DAYS",
                 30,
+                category="BACKUP"
+            )
+            self._create_app_setting(
+                "DO_NOT_DELETE_LAST",
+                10,
                 category="BACKUP"
             )
             self.save()
