@@ -34,6 +34,29 @@ class SaveManager():
         self.backup_in_progress = False
         self.cancel_backup = threading.Event()
 
+    def inventory_saves(self):
+        x4_save_path = self.controller.app_settings.get_app_setting('X4SAVEPATH')
+        inventory = []
+        for file in os.scandir(x4_save_path):
+            if (
+                not file.is_file() or 
+                'xml.gz' not in file.name or
+                'temp_save' in file.name
+            ):
+                continue
+            
+            sha256 = hashlib.sha256()
+            with open(file.path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    sha256.update(chunk)
+            hash = sha256.hexdigest()
+            
+            inventory.append({
+                'save_file': file,
+                'backup': self.controller.db.get_backup_by_hash(hash)
+            })
+        return inventory
+
     def mark_old_backups(self, silent=False):
         """Tries to find backups that can be pruned.
         Sets the deleted flag for all backups that can be pruned
