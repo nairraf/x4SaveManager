@@ -71,9 +71,14 @@ class Inventory(NewPageRoot):
         self.tree.column('Notes', width=200, anchor='w')
         self.tree.heading('Notes', text='Notes')
 
-        self.populate_tree()
-
+        # display the window, show a wait cursor and populate the page
+        # the window must be displayed in order for the wait cursor to be
+        # displayed
+        self.controller.set_cursor(type="wait")
         self.show_window()
+        self.populate_tree()
+        self.controller.set_cursor(type='')
+        
 
     def populate_tree(self):
         # populate the tree with saves that match the selected playthrough
