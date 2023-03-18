@@ -73,6 +73,10 @@ class MainMenu():
         )
         self.menu_backup.add_separator()
         self.menu_backup.add_command(
+            label='Import and Re-Index old backups',
+            command=self.import_backups
+        )
+        self.menu_backup.add_command(
             label='Mark Old Backups For Deletion',
             command=self.mark_old_backups
         )
@@ -107,6 +111,9 @@ class MainMenu():
             self.inventory.bind('<Destroy>', self.add_inventory_closed)
         else:
             self.inventory.focus()
+
+    def import_backups(self):
+        self.controller.save_manager.import_backups()
 
     def add_inventory_closed(self, *args):
         """Callback when the inventory screen is closed

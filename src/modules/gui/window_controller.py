@@ -177,6 +177,10 @@ class WindowController(tk.Tk):
             lambda e: self.statusbar.set_backup_status('backup running')
         )
         self.bind(
+            "<<ImportingBackups>>",
+            lambda e: self.statusbar.set_backup_status('Importing and Re-indexing Previous Backups')
+        )
+        self.bind(
             "<<BackupThreadStarted>>",
             lambda e: self.statusbar.set_backup_status('waiting for new save files')
         )

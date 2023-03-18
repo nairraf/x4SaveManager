@@ -33,6 +33,12 @@ class SaveManager():
         self.backup_thread = None
         self.backup_in_progress = False
         self.cancel_backup = threading.Event()
+        self.temp_dir = os.path.join(
+            self.controller.app_settings.get_app_setting(
+                'BACKUPPATH'
+            ),
+            'temp'
+        )
 
     def inventory_saves(self):
         x4_save_path = self.controller.app_settings.get_app_setting('X4SAVEPATH')
@@ -56,6 +62,89 @@ class SaveManager():
                 'backup': self.controller.db.get_backup_by_hash(hash)
             })
         return inventory
+    
+    def import_backups(self):
+        message = """Are you sure you want to start the import process?
+
+Note: this may take some time to re-import and re-index all previous backups
+"""
+        self.controller.show_question(message)
+
+        # check the answer, exit if the user selected no
+        if not self.controller.check_modal():
+            return
+        
+        self.controller.set_cursor(type='wait')
+        self.controller.event_generate("<<ImportingBackups>>")
+        self.controller.update()
+        backup_root = self.controller.app_settings.get_app_setting('BACKUPPATH')
+
+        playthroughs_deleted = False
+
+        if not os.path.exists(backup_root):
+            self.controller.show_error('Cannot Find backup folder. Please check your settings')
+            return
+        
+        for file in os.scandir(backup_root):
+            if '.xml.gz' not in file.name:
+                continue
+            
+            timer_start = perf_counter()
+            now = datetime.datetime.now()
+
+            hash = self.compute_file_hash(file.path)
+
+            # test to see if the backup already exists and skip if it exists
+            if self.controller.db.get_backup_by_hash(hash):
+                continue
+
+            id = file.name.split('_')[0].replace('id', '')
+
+            # if the playthrough ID exists don't set the delete flag
+            # if not, then set the delete flag and let the user move them
+
+            if self.controller.db.get_playthrough_by_id(id):
+                deleted_flag = False
+            else:
+                deleted_flag = True
+                playthroughs_deleted = True
+
+            details = self.extract_backup_details(
+                backup_fullpath=file.path
+            )
+
+            timer_stop = perf_counter()
+            backup_timespan = timer_stop - timer_start
+
+            self.controller.db.add_backup(
+                playthrough_id = id,
+                x4_filename = 'unknown - imported',
+                x4_save_time = details['save_time'],
+                file_hash = hash,
+                backup_time = now.timestamp(),
+                backup_filename = file.name,
+                backup_duration = backup_timespan,
+                game_version = details['game_version'],
+                original_game_version = details['original_version'],
+                playtime = details['gametime'],
+                x4_start_type = details['start_type'],
+                character_name = details['playername'],
+                money = details['money'],
+                moded = details['modified'],
+                delete = deleted_flag
+            )
+        
+        self.controller.event_generate("<<BackupIdle>>")
+        self.controller.set_cursor(type='')
+        if playthroughs_deleted:
+            self.controller.show_message("""import complete
+
+Note: Some backups did not have a matching playthrough
+      These backups have had their delete flag set,
+      please verify the items in the __RECYCLE BIN__
+""")
+        else:
+            self.controller.show_message('import complete')
 
     def mark_old_backups(self, silent=False):
         """Tries to find backups that can be pruned.
@@ -256,15 +345,12 @@ WARNING: this will overwrite the X4 save file if it exists.
         backup_path = settings["APP"]["BACKUPPATH"]
         x4_save_path = settings["APP"]["X4SAVEPATH"]
         save_seconds = settings["BACKUP"]["BACKUPFREQUENCY_SECONDS"]
-        temp_dir = os.path.join(
-            backup_path, 'temp'
-        )
         
         # make sure that we have a temp dir, and it's empty
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        if not os.path.exists(self.temp_dir):
+            os.makedirs(self.temp_dir)
         
-        for file in os.scandir(temp_dir):
+        for file in os.scandir(self.temp_dir):
             if '.xml' in file.name:
                 os.remove(file.path)
 
@@ -308,11 +394,7 @@ WARNING: this will overwrite the X4 save file if it exists.
                 ):
                     continue
                 
-                sha256 = hashlib.sha256()
-                with open(file.path, "rb") as f:
-                    for chunk in iter(lambda: f.read(4096), b""):
-                        sha256.update(chunk)
-                hash = sha256.hexdigest()
+                hash = self.compute_file_hash(file.path)
                 
                 if db.check_backup_exists(hash):
                     continue
@@ -335,79 +417,17 @@ WARNING: this will overwrite the X4 save file if it exists.
                     'backup_filename': backup_filename,
                     'hash': hash
                 })
-                x4save_time = os.path.getmtime(file.path)
+
                 try:
                     data['processing'] = 1
                     message_queue.put(data)
                     self.controller.event_generate("<<NewQueueData>>")
                     shutil.copyfile(file.path, backup_fullpath)
-                    tempfilepath = os.path.join(
-                        temp_dir,
-                        f'{now.strftime("%Y%m%d-%H%M%S")}.xml'
-                    )
-                    # extract the xml in chunks so we don't kill memory
-                    with gzip.open(backup_fullpath, 'rb') as f_in:
-                        with open(tempfilepath, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out, 4096)
                     
-                    #search the xml in a memory friendly way
-                    context = etree.iterparse(
-                        tempfilepath,
-                        # in order to save memory as we process the save file
-                        # we have to match on all major tags and clear them
-                        # from memory as we go, searching and recording what we need
-                        # this way the element.clear() calls works as expected
-                        # and it can clear no-longer needed elements from memory
-                        tag=(
-                            'savegame','info','game','player','patches','universe',
-                            'factions','jobs','god','controltextures','component',
-                            'conections','connection','connected','offset','physics',
-                            'economylog','stats','log','messages','script','md',
-                            'missions','aidirector','operations','ventures',
-                            'notifications','ui','signatures'
-                        )
+                    details = self.extract_backup_details(
+                        backup_fullpath=backup_fullpath
                     )
-                    game_version = ''
-                    original_version = ''
-                    modified = ''
-                    gametime = ''
-                    start_type = ''
-                    playername = ''
-                    money = ''
 
-                    for event, element in context:
-                        if element.tag == 'game':
-                            game_version = "{} build {}".format(
-                                element.attrib['version'] if 'version' in element.attrib else '',
-                                element.attrib['build'] if 'build' in element.attrib else ''
-                            )
-                            original_version = "{} build {}".format(
-                                element.attrib['original'] if 'original' in element.attrib else '',
-                                element.attrib['originalbuild'] if 'originalbuild' in element.attrib else ''
-                            )
-                            modified = element.attrib['modified'] if 'modified' in element.attrib else ''
-                            gametime = element.attrib['time'] if 'time' in element.attrib else ''
-                            start_type = element.attrib['start'] if 'start' in element.attrib else ''
-
-                        if element.tag == 'player':
-                            playername = element.attrib['name'] if 'name' in element.attrib else ''
-                            money = element.attrib['money'] if 'money' in element.attrib else ''
-
-                        # while we can process the whole file in a memory
-                        # efficient way, for now we can stop afer info
-                        # as all the details we are interested in are
-                        # available at the start of the file before the universe
-                        if element.tag == 'info':
-                            element.clear()
-                            break
-                        
-                        # clear the elements that we are matching on
-                        # as we process the file to keep memory usage down
-                        element.clear()
-                    
-                    del context
-
-                    os.remove(tempfilepath)
                     timer_stop = perf_counter()
                     backup_timespan = timer_stop - timer_start
                     data['x4saves'][-1]['backup_timespan'] = backup_timespan
@@ -415,18 +435,18 @@ WARNING: this will overwrite the X4 save file if it exists.
                     db.add_backup(
                         playthrough_id = playthrough['id'],
                         x4_filename = file.name,
-                        x4_save_time = x4save_time,
+                        x4_save_time = details['save_time'],
                         file_hash = hash,
                         backup_time = now.timestamp(),
                         backup_filename = backup_filename,
                         backup_duration = backup_timespan,
-                        game_version = game_version,
-                        original_game_version = original_version,
-                        playtime = gametime,
-                        x4_start_type = start_type,
-                        character_name = playername,
-                        money = money,
-                        moded = modified
+                        game_version = details['game_version'],
+                        original_game_version = details['original_version'],
+                        playtime = details['gametime'],
+                        x4_start_type = details['start_type'],
+                        character_name = details['playername'],
+                        money = details['money'],
+                        moded = details['modified']
                     )
                     self.controller.event_generate("<<BackupThreadStarted>>")
                 except Exception as e:
@@ -435,3 +455,99 @@ WARNING: this will overwrite the X4 save file if it exists.
             # done with this loop, get ready for the next
             data['loops'] += 1
     
+    def compute_file_hash(self, file_path):
+        sha256 = hashlib.sha256()
+        if os.path.exists(file_path):
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    sha256.update(chunk)
+            return sha256.hexdigest()
+
+    def extract_backup_details(self, backup_fullpath):
+        """uncompresses an X4 save file and extracts details from the XML
+        
+        Args:
+            backup_fullpath (str): the full path to the backed up X4 save file
+            tempfilepath (str): the full path to temporary extracted backup file
+        """
+        save_details = {
+            'save_time': '',
+            'game_version': '',
+            'original_version': '',
+            'modified': '',
+            'gametime': '',
+            'start_type': '',
+            'playername': '',
+            'money': ''
+        }
+
+        now = datetime.datetime.now()
+
+        if not os.path.exists(self.temp_dir):
+            os.makedirs(self.temp_dir)
+
+        tempfilepath = os.path.join(
+            self.temp_dir,
+            f'{now.strftime("%Y%m%d-%H%M%S")}.xml'
+        )
+
+        # extract the xml to a temp file in chunks so we don't kill memory
+        with gzip.open(backup_fullpath, 'rb') as f_in:
+            with open(tempfilepath, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out, 4096)
+        
+        #search the xml in a memory friendly way
+        context = etree.iterparse(
+            tempfilepath,
+            # in order to save memory as we process the save file
+            # we have to match on all major tags and clear them
+            # from memory as we go, searching and recording what we need
+            # this way the element.clear() calls works as expected
+            # and it can clear no-longer needed elements from memory
+            tag=(
+                'savegame','info','save','game','player','patches','universe',
+                'factions','jobs','god','controltextures','component',
+                'conections','connection','connected','offset','physics',
+                'economylog','stats','log','messages','script','md',
+                'missions','aidirector','operations','ventures',
+                'notifications','ui','signatures'
+            )
+        )
+        
+        for event, element in context:
+            if element.tag == 'save':
+                save_details['save_time'] = element.attrib['date'] if 'date' in element.attrib else ''
+            
+            if element.tag == 'game':
+                save_details['game_version'] = "{} build {}".format(
+                    element.attrib['version'] if 'version' in element.attrib else '',
+                    element.attrib['build'] if 'build' in element.attrib else ''
+                )
+                save_details['original_version'] = "{} build {}".format(
+                    element.attrib['original'] if 'original' in element.attrib else '',
+                    element.attrib['originalbuild'] if 'originalbuild' in element.attrib else ''
+                )
+                save_details['modified'] = element.attrib['modified'] if 'modified' in element.attrib else ''
+                save_details['gametime'] = element.attrib['time'] if 'time' in element.attrib else ''
+                save_details['start_type'] = element.attrib['start'] if 'start' in element.attrib else ''
+
+            if element.tag == 'player':
+                save_details['playername'] = element.attrib['name'] if 'name' in element.attrib else ''
+                save_details['money'] = element.attrib['money'] if 'money' in element.attrib else ''
+
+            # while we can process the whole file in a memory
+            # efficient way, for now we can stop afer info
+            # as all the details we are interested in are
+            # available at the start of the file before the universe
+            if element.tag == 'info':
+                element.clear()
+                break
+            
+            # clear the elements that we are matching on
+            # as we process the file to keep memory usage down
+            element.clear()
+        
+        del context
+        os.remove(tempfilepath)
+
+        return save_details
