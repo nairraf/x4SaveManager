@@ -220,7 +220,7 @@ NOTE:
         
         tk.Label(
             pruning_frame,
-            text="Prune backups application startup"
+            text="Prune backups\nat application startup"
         ).grid(
             column=0,
             row=2,

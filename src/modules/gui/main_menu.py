@@ -92,14 +92,22 @@ class MainMenu():
 
         # help menu
         self.menu_help.add_command(
-            label='Check Update',
+            label='Check For Updates',
             command=self.check_update
+        )
+        self.menu_help.add_command(
+            label='Online Documentation',
+            command=self.open_documentation
         )
         self.menu_help.add_separator()
         self.menu_help.add_command(
             label='About',
             command=self.open_about
         )
+
+    def open_documentation(self):
+        self.controller.open_url('https://github.com/nairraf/x4SaveManager/wiki')
+        self.controller.show_message("Online Documentation opened in a browser window")
 
     def inventory_saves(self):
         """Opens the inventory window
