@@ -108,6 +108,12 @@ class WindowController(tk.Tk):
         else:
             self.title(f"{guimod.GuiSettings.window_title} - {text}")
 
+    def set_cursor(self, type):
+        """Changes the mouse cursor to the specified type
+        """
+        self.config(cursor=type)
+        self.update()
+
     def startup(self):
         """starts the main window TK event loop
         """
@@ -169,6 +175,10 @@ class WindowController(tk.Tk):
         self.bind(
             "<<BackupRunning>>",
             lambda e: self.statusbar.set_backup_status('backup running')
+        )
+        self.bind(
+            "<<ImportingBackups>>",
+            lambda e: self.statusbar.set_backup_status('Importing and Re-indexing Previous Backups')
         )
         self.bind(
             "<<BackupThreadStarted>>",

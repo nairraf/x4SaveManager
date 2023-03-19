@@ -8,6 +8,7 @@ from tkinter import Menu
 from .settings_page import Settings
 from .playthrough_page import Playthrough
 from .about_page import About
+from .inventory_page import Inventory
 
 if TYPE_CHECKING:
     from modules.gui import WindowController
@@ -25,6 +26,7 @@ class MainMenu():
         self.settings = None
         self.about = None
         self.add_playthrough = None
+        self.inventory = None
         #create our top level menu's
         menubar = Menu(controller)
         self.controller['menu'] = menubar
@@ -71,6 +73,10 @@ class MainMenu():
         )
         self.menu_backup.add_separator()
         self.menu_backup.add_command(
+            label='Import and Re-Index old backups',
+            command=self.import_backups
+        )
+        self.menu_backup.add_command(
             label='Mark Old Backups For Deletion',
             command=self.mark_old_backups
         )
@@ -78,17 +84,51 @@ class MainMenu():
             label='Delete Marked Backups',
             command=self.delete_backups
         )
+        self.menu_backup.add_separator()
+        self.menu_backup.add_command(
+            label='X4 Save Backup Mapping',
+            command=self.inventory_saves
+        )
 
         # help menu
         self.menu_help.add_command(
-            label='Check Update',
+            label='Check For Updates',
             command=self.check_update
+        )
+        self.menu_help.add_command(
+            label='Online Documentation',
+            command=self.open_documentation
         )
         self.menu_help.add_separator()
         self.menu_help.add_command(
             label='About',
             command=self.open_about
         )
+
+    def open_documentation(self):
+        self.controller.open_url('https://github.com/nairraf/x4SaveManager/wiki')
+        self.controller.show_message("Online Documentation opened in a browser window")
+
+    def inventory_saves(self):
+        """Opens the inventory window
+        
+        Used to only open 1 inventory window at a time
+        """
+        if self.inventory == None:
+            self.inventory = Inventory(self, self.controller)
+            self.inventory.bind('<Destroy>', self.add_inventory_closed)
+        else:
+            self.inventory.focus()
+
+    def import_backups(self):
+        self.controller.save_manager.import_backups()
+
+    def add_inventory_closed(self, *args):
+        """Callback when the inventory screen is closed
+        
+        Used to only open 1 inventory window at a time
+        """
+        self.inventory = None
 
     def mark_old_backups(self):
         self.controller.save_manager.mark_old_backups()
