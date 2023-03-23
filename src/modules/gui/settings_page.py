@@ -212,7 +212,10 @@ NOTE:
         )
         Hovertip(
             self.do_not_delete_backups,
-        """Never prune this number of the latest backup files
+        """This is the number of latest backups per playthrough to always keep.
+
+Example: if you have 2 playthroughs, and you set this number to 10, then
+         20 backups will always be kept, the 10 most recent per playthrough
 
 NOTE: 
   backups that have their flag set will never be pruned."""
