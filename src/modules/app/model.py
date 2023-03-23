@@ -607,12 +607,21 @@ by assigning it to another playthrough""".format(
         return None
 
     def get_latest_backups(self):
-        """returns the file_hashes of the latest backups.
+        """returns the file_hashes of the latest backups per playthrough.
         The number returned is configed in the backup options
         "Do Not Prune Last Backups" option
         """
         query = """
-            SELECT file_hash FROM backups ORDER BY x4_save_time DESC LIMIT {}
+            SELECT sub.file_hash
+            FROM (
+                SELECT ROW_NUMBER() OVER (
+                    PARTITION BY "playthrough_id"
+                    ORDER BY x4_save_time DESC
+                ) as "rnk",
+                * FROM backups
+            ) sub 
+            WHERE sub.rnk <={}
+            ORDER BY sub.playthrough_id ASC, sub.x4_save_time DESC; 
         """.format(
             self.controller.app_settings.get_app_setting(
                 'DO_NOT_DELETE_LAST',
